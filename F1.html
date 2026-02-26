@@ -289,66 +289,94 @@ header::after {
   font-weight: 600; font-size: 0.92rem; color: rgba(255,255,255,0.8);
 }
 
-/* ══════════════ HOME FAVOURITES ══════════════ */
+/* ══════════════ HOME FAVOURITES — Cinematic Driver Cards ══════════════ */
 .home-fav-scroll {
-  display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.75rem;
+  display: flex; gap: 1.25rem; overflow-x: auto; padding-bottom: 0.75rem;
   scroll-snap-type: x mandatory; margin-bottom: 2rem;
 }
 .home-fav-scroll::-webkit-scrollbar { height: 5px; }
 .home-fav-scroll::-webkit-scrollbar-thumb { background: #c0c0c5; border-radius: 3px; }
 .home-fav-card {
-  flex: 0 0 310px; scroll-snap-align: start;
-  background: var(--surface-gradient); border-radius: var(--radius-lg);
-  padding: 1.5rem; position: relative; overflow: hidden;
-  box-shadow: var(--shadow-md); transition: all var(--transition); cursor: default;
-  border: 1px solid var(--border-light); border-top: 3px solid var(--red);
+  flex: 0 0 340px; scroll-snap-align: start;
+  position: relative; height: 320px;
+  border-radius: 18px; overflow: hidden;
+  padding: 0; cursor: default;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.4s var(--ease);
+  border: none;
+  background-color: #0c0c0e;
+  background-size: auto 100%;
+  background-position: right center;
+  background-repeat: no-repeat;
+}
+/* Cinematic gradient overlay */
+.home-fav-card::before {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.92) 100%),
+    linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, transparent 100%);
+}
+/* Subtle team-colored top accent */
+.home-fav-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; z-index: 3;
+  background: var(--team-accent, var(--red));
+  box-shadow: 0 0 12px var(--team-accent, var(--red));
 }
 .home-fav-card:hover {
-  transform: translateY(-4px) scale(1.005);
-  box-shadow: var(--shadow-hover);
-  border-color: rgba(225,6,0,0.15);
-  border-top-color: var(--red);
+  transform: scale(1.03);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.15);
 }
-.home-fav-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-.home-fav-img {
-  width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
-  border: 2px solid var(--border-light); background: var(--bg); flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+.home-fav-card > * { position: relative; z-index: 2; }
+.home-fav-content {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+  padding: 1.5rem 1.75rem;
+  display: flex; flex-direction: column; gap: 0.75rem;
 }
-.home-fav-img-placeholder {
-  width: 64px; height: 64px; border-radius: 50%; background: var(--bg-subtle);
-  border: 2px solid var(--border-light); display: flex; align-items: center;
-  justify-content: center; flex-shrink: 0;
-  font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; color: var(--text-muted);
+.home-fav-top { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0; }
+.home-fav-img, .home-fav-img-placeholder { display: none; }
+.home-fav-info { min-width: 0; }
+.home-fav-label {
+  font-family: var(--font-display); font-weight: 700; font-size: 0.55rem;
+  letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.4);
 }
-.home-fav-info { flex: 1; min-width: 0; }
 .home-fav-name {
-  font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
-  letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--font-display); font-weight: 800; font-size: 1.6rem;
+  letter-spacing: -0.8px; color: #fff; line-height: 1.1;
+  white-space: normal; overflow: visible; text-overflow: unset;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
-.home-fav-team { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.1rem; font-weight: 500; }
+.home-fav-team {
+  font-size: 0.82rem; font-weight: 500; margin-top: 0.15rem;
+  color: rgba(255,255,255,0.6);
+}
 .home-fav-number {
-  position: absolute; top: 0.4rem; right: 0.9rem;
-  font-family: var(--font-display); font-weight: 800; font-size: 2.6rem;
-  color: var(--border-light); line-height: 1;
+  position: absolute; top: 16px; right: 24px; z-index: 2;
+  font-family: var(--font-display); font-weight: 800; font-size: 7rem;
+  line-height: 1; color: rgba(255,255,255,0.06);
+  letter-spacing: -4px;
 }
-.home-fav-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.home-fav-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+}
 .home-fav-stat {
-  background: var(--bg); border-radius: 10px; padding: 0.6rem 0.4rem; text-align: center;
-  border: 1px solid var(--border-light);
+  background: rgba(255,255,255,0.08); backdrop-filter: blur(8px);
+  border-radius: 10px; padding: 0.55rem 0.4rem; text-align: center;
+  border: 1px solid rgba(255,255,255,0.06);
 }
 .home-fav-stat-val {
   font-family: var(--font-display); font-weight: 800; font-size: 1.3rem;
-  line-height: 1; color: var(--text); letter-spacing: -0.5px;
+  line-height: 1; color: #fff; letter-spacing: -0.5px;
 }
 .home-fav-stat-lbl {
-  font-family: var(--font-display); font-size: 0.55rem; font-weight: 700;
-  letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted); margin-top: 0.2rem;
+  font-family: var(--font-display); font-size: 0.5rem; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); margin-top: 0.2rem;
 }
 .home-no-fav {
-  flex: 0 0 310px; background: var(--surface); border: 2px dashed var(--border);
-  border-radius: var(--radius-lg); padding: 2rem; display: flex; flex-direction: column;
+  flex: 0 0 340px; background: var(--surface); border: 2px dashed var(--border);
+  border-radius: 18px; padding: 2rem; display: flex; flex-direction: column;
   align-items: center; justify-content: center; text-align: center; color: var(--text-secondary);
+  height: 320px;
 }
 .home-no-fav h4 {
   font-family: var(--font-display); font-size: 1rem; font-weight: 600;
@@ -703,6 +731,91 @@ footer {
 footer a { color: var(--text-secondary); text-decoration: none; transition: color var(--transition); }
 footer a:hover { color: var(--red); }
 
+/* ══════════════ SPEED LINES BACKGROUND ══════════════ */
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    120deg, rgba(225,6,0,0.015), rgba(225,6,0,0.015) 1.5px,
+    transparent 1.5px, transparent 45px
+  );
+  pointer-events: none; z-index: 0;
+}
+body > * { position: relative; z-index: 1; }
+
+/* ══════════════ SCROLL CAR ══════════════ */
+.scroll-car {
+  position: fixed; bottom: 16px; left: 0; z-index: 998;
+  pointer-events: none; transition: transform 0.08s linear;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.25));
+  opacity: 0.9;
+}
+.scroll-car svg { width: 180px; height: auto; display: block; }
+.scroll-car .wheel { animation: wheelSpin 0.3s linear infinite; transform-origin: center; }
+@keyframes wheelSpin { to { transform: rotate(360deg); } }
+.scroll-car .exhaust-glow { animation: exhaustPulse 0.2s ease-in-out infinite alternate; }
+@keyframes exhaustPulse { from { opacity: 0.15; rx: 6; } to { opacity: 0.5; rx: 14; } }
+
+/* ══════════════ F1 HISTORY BANNER ══════════════ */
+.history-banner {
+  margin-bottom: 2rem; border-radius: var(--radius-lg); overflow: hidden;
+  background: var(--header-bg); position: relative;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.history-banner-inner {
+  display: flex; align-items: stretch; min-height: 220px;
+}
+.history-banner-video {
+  flex: 0 0 390px; position: relative; overflow: hidden;
+  background: #000;
+}
+.history-banner-video iframe {
+  width: 100%; height: 100%; min-height: 220px; border: none; display: block;
+}
+.history-banner-content {
+  flex: 1; padding: 2rem 2.5rem; display: flex; flex-direction: column;
+  justify-content: center; color: #fff; position: relative; overflow: hidden;
+}
+.history-banner-content::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    -45deg, transparent, transparent 30px,
+    rgba(255,255,255,0.01) 30px, rgba(255,255,255,0.01) 31px
+  );
+}
+.history-banner-content > * { position: relative; z-index: 1; }
+.history-banner-eyebrow {
+  font-family: var(--font-display); font-weight: 700; font-size: 0.6rem;
+  letter-spacing: 3px; text-transform: uppercase; color: var(--red);
+  margin-bottom: 0.5rem;
+}
+.history-banner-title {
+  font-family: var(--font-display); font-weight: 800; font-size: 1.8rem;
+  letter-spacing: -0.8px; line-height: 1.1; margin-bottom: 0.5rem;
+}
+.history-banner-desc {
+  color: rgba(255,255,255,0.5); font-size: 0.88rem; line-height: 1.5;
+  max-width: 400px;
+}
+.history-banner-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  margin-top: 1rem; font-family: var(--font-display); font-weight: 700;
+  font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+.history-banner-badge::before {
+  content: ''; width: 6px; height: 6px; background: var(--red);
+  border-radius: 50%; box-shadow: 0 0 6px rgba(225,6,0,0.5);
+}
+@media (max-width: 768px) {
+  .history-banner-inner { flex-direction: column; }
+  .history-banner-video { flex: none; height: 200px; }
+  .history-banner-content { padding: 1.5rem; }
+  .history-banner-title { font-size: 1.3rem; }
+  .scroll-car svg { width: 120px; }
+  .scroll-car { bottom: 10px; }
+}
+
 /* ══════════════ GRIDS ══════════════ */
 .home-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -728,7 +841,9 @@ footer a:hover { color: var(--red); }
   .fav-driver-number { font-size: 3rem; }
   .fav-driver-name-big { font-size: 1.4rem; }
   .logo-text { font-size: 1.2rem; }
-  .home-fav-card { flex: 0 0 270px; }
+  .home-fav-card { flex: 0 0 280px; height: 280px; }
+  .home-fav-name { font-size: 1.3rem; }
+  .home-fav-number { font-size: 5rem; }
   .battle-name { min-width: 90px; font-size: 0.75rem; }
   .race-card-circuit-svg { width: 70px; height: 70px; padding: 8px; }
   .section-header { font-size: 1.5rem; letter-spacing: -0.5px; }
@@ -758,6 +873,21 @@ footer a:hover { color: var(--red); }
     <div id="home-favourites-section" style="display:none">
       <h2 class="section-header"><span class="red-bar"></span>My Drivers</h2>
       <div id="home-favourites-scroll" class="home-fav-scroll"></div>
+    </div>
+
+    <!-- F1 History Moment Banner -->
+    <div class="history-banner" id="history-banner">
+      <div class="history-banner-inner">
+        <div class="history-banner-video">
+          <iframe id="history-video" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <div class="history-banner-content">
+          <div class="history-banner-eyebrow" id="history-eyebrow">● F1 History</div>
+          <div class="history-banner-title" id="history-title">Loading...</div>
+          <div class="history-banner-desc" id="history-desc"></div>
+          <div class="history-banner-badge">Formula 1 — 75 Years of Racing</div>
+        </div>
+      </div>
     </div>
     <h2 class="section-header"><span class="red-bar"></span>Upcoming Races</h2>
     <div id="home-upcoming-strip" class="upcoming-races-strip"><div class="loading"><div class="spinner"></div></div></div>
@@ -810,6 +940,68 @@ footer a:hover { color: var(--red); }
 <footer>
   Cé's Racing Hub — Data via <a href="https://api.jolpi.ca/ergast/" target="_blank">Jolpica F1 API</a> &amp; <a href="https://openf1.org" target="_blank">OpenF1</a> — Not affiliated with Formula 1 or FIA — <span id="connection-status">Connecting...</span>
 </footer>
+
+<!-- Scroll Car — Detailed F1 Silhouette -->
+<div class="scroll-car" id="scroll-car">
+  <svg viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg">
+    <!-- Shadow -->
+    <ellipse cx="150" cy="72" rx="120" ry="5" fill="rgba(0,0,0,0.12)"/>
+    <!-- Rear diffuser -->
+    <path d="M268,52 L280,48 L282,54 L270,56Z" fill="#333"/>
+    <!-- Body main -->
+    <path d="M40,54 C38,50 30,48 22,46 L18,42 L14,38 L20,32 L40,28 L65,24 L95,20 L130,17 L160,16 L190,17 L215,20 L240,24 L255,28 L265,34 L270,42 L272,50 L270,56 L40,56Z" fill="#e10600"/>
+    <!-- Nose cone -->
+    <path d="M14,38 L6,36 L2,38 L6,42 L14,42Z" fill="#cc0500"/>
+    <!-- Front wing -->
+    <path d="M2,36 L0,32 L8,30 L14,34Z" fill="#b00400"/>
+    <path d="M2,42 L0,46 L8,48 L14,42Z" fill="#b00400"/>
+    <!-- Cockpit opening -->
+    <path d="M120,18 L138,16 L158,16 L165,18 L160,24 L135,26 L118,24Z" fill="#0a0a0a"/>
+    <!-- Halo -->
+    <path d="M125,22 C125,12 150,10 160,17" fill="none" stroke="#666" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- Driver helmet -->
+    <ellipse cx="142" cy="20" rx="8" ry="6" fill="#222"/>
+    <ellipse cx="142" cy="19" rx="6" ry="4" fill="#e10600" opacity="0.7"/>
+    <!-- Air intake -->
+    <path d="M155,16 L160,10 L166,10 L168,16Z" fill="#222"/>
+    <!-- Rear wing main -->
+    <rect x="260" y="16" width="32" height="5" rx="1.5" fill="#cc0500"/>
+    <!-- Rear wing endplates -->
+    <rect x="258" y="14" width="3" height="28" rx="1" fill="#444"/>
+    <rect x="291" y="14" width="3" height="28" rx="1" fill="#444"/>
+    <!-- Rear wing pillar -->
+    <rect x="272" y="22" width="3" height="16" rx="1" fill="#888"/>
+    <!-- Engine cover shark fin -->
+    <path d="M210,20 L240,18 L260,20 L260,28 L240,24 L210,22Z" fill="#cc0500"/>
+    <!-- Sidepod detail -->
+    <path d="M90,28 L170,22 L200,24 L200,36 L170,38 L90,42Z" fill="rgba(0,0,0,0.15)"/>
+    <!-- Number -->
+    <text x="105" y="44" font-family="Outfit,sans-serif" font-weight="800" font-size="14" fill="rgba(255,255,255,0.5)">55</text>
+    <!-- Floor edge -->
+    <line x1="35" y1="56" x2="270" y2="56" stroke="#222" stroke-width="1.5"/>
+    <!-- Front wheel -->
+    <g class="wheel">
+      <circle cx="62" cy="55" r="14" fill="#1a1a1a"/>
+      <circle cx="62" cy="55" r="11" fill="#222" stroke="#333" stroke-width="1"/>
+      <circle cx="62" cy="55" r="5" fill="#555"/>
+      <circle cx="62" cy="55" r="2" fill="#888"/>
+      <line x1="62" y1="42" x2="62" y2="68" stroke="#444" stroke-width="0.6"/>
+      <line x1="49" y1="55" x2="75" y2="55" stroke="#444" stroke-width="0.6"/>
+    </g>
+    <!-- Rear wheel -->
+    <g class="wheel">
+      <circle cx="245" cy="55" r="15" fill="#1a1a1a"/>
+      <circle cx="245" cy="55" r="12" fill="#222" stroke="#333" stroke-width="1"/>
+      <circle cx="245" cy="55" r="5.5" fill="#555"/>
+      <circle cx="245" cy="55" r="2.2" fill="#888"/>
+      <line x1="245" y1="41" x2="245" y2="69" stroke="#444" stroke-width="0.6"/>
+      <line x1="231" y1="55" x2="259" y2="55" stroke="#444" stroke-width="0.6"/>
+    </g>
+    <!-- Exhaust glow -->
+    <ellipse cx="278" cy="44" rx="10" ry="4" fill="rgba(255,100,0,0.25)" class="exhaust-glow"/>
+  </svg>
+</div>
+
 <script>
 const API_BASE='https://api.jolpi.ca/ergast/f1', OPENF1_BASE='https://api.openf1.org/v1', CURRENT_YEAR=2025;
 const CORS_PROXIES=[url=>url, url=>`https://corsproxy.io/?${encodeURIComponent(url)}`, url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`];
@@ -894,11 +1086,23 @@ function renderHomeFavourites(){
   sec.style.display='block';
   if(!favs.length){scr.innerHTML=`<div class="home-no-fav"><h4>No favourites yet</h4><p>Go to Drivers and click ★</p></div>`;return}
   scr.innerHTML=favs.map(s=>{const d=s.Driver,c=s.Constructors?.[0],tc=getTeamColor(c?.constructorId);
-    return `<div class="home-fav-card" style="border-top-color:${tc}"><div class="home-fav-number">${d.permanentNumber||'#'}</div>
-      <div class="home-fav-top">${imgOrPH(d.familyName,d.code,64,'home-fav-img')}<div class="home-fav-info"><div class="home-fav-name">${d.givenName} ${d.familyName}</div><div class="home-fav-team" style="color:${tc}">${c?.name||''}</div></div></div>
-      <div class="home-fav-stats"><div class="home-fav-stat"><div class="home-fav-stat-val">${s.position}<sup style="font-size:.55em">${getOrd(s.position)}</sup></div><div class="home-fav-stat-lbl">Position</div></div>
-      <div class="home-fav-stat"><div class="home-fav-stat-val">${s.points}</div><div class="home-fav-stat-lbl">Points</div></div>
-      <div class="home-fav-stat"><div class="home-fav-stat-val">${s.wins}</div><div class="home-fav-stat-lbl">Wins</div></div></div></div>`}).join('');
+    const imgUrl=getDriverImg(d.familyName,d.code);
+    const bgStyle=imgUrl?`background-image:url('${imgUrl}');background-size:auto 95%;background-position:right -10px bottom;`:'';
+    return `<div class="home-fav-card" style="${bgStyle}--team-accent:${tc}">
+      <div class="home-fav-number">${d.permanentNumber||'#'}</div>
+      <div class="home-fav-content">
+        <div class="home-fav-top"><div class="home-fav-info">
+          <div class="home-fav-label">★ Favourite Driver</div>
+          <div class="home-fav-name">${d.givenName} ${d.familyName}</div>
+          <div class="home-fav-team" style="color:${tc}">${c?.name||''}</div>
+        </div></div>
+        <div class="home-fav-stats">
+          <div class="home-fav-stat"><div class="home-fav-stat-val">${s.position}<sup style="font-size:.5em">${getOrd(s.position)}</sup></div><div class="home-fav-stat-lbl">Position</div></div>
+          <div class="home-fav-stat"><div class="home-fav-stat-val">${s.points}</div><div class="home-fav-stat-lbl">Points</div></div>
+          <div class="home-fav-stat"><div class="home-fav-stat-val">${s.wins}</div><div class="home-fav-stat-lbl">Wins</div></div>
+        </div>
+      </div>
+    </div>`}).join('');
 }
 function renderUpcomingStrip(){
   const c=document.getElementById('home-upcoming-strip'),now=new Date();
@@ -993,6 +1197,53 @@ function navigateTo(page){document.querySelectorAll('.nav-tab').forEach(t=>{t.cl
 document.querySelectorAll('.nav-tab').forEach(tab=>{tab.addEventListener('click',()=>navigateTo(tab.dataset.page))});
 async function init(){const st=document.getElementById('connection-status');try{await Promise.all([loadDriverImages(),loadSchedule(),loadDriverStandings(),loadConstructorStandings(),loadLatestResult()]);const pn=['Direct API','corsproxy.io','allorigins.win'];st.innerHTML=`<span style="color:var(--green)">● Connected</span> via ${pn[workingProxyIndex]}`;renderHomeFavourites();renderTop5Battle();renderLatestResult();renderDriverStandings();renderFavourites()}catch(e){st.innerHTML=`<span style="color:var(--red)">● Connection failed</span>`}}
 init();
+
+// ── F1 History Moments (rotates on each visit) ──
+(function(){
+  const moments = [
+    { id: 'FcpXAM0mMaU', eyebrow: '● Donington 1993', title: "Senna's Lap of the Gods", desc: "Ayrton Senna's legendary opening lap at Donington Park — overtaking Schumacher, Wendlinger, Hill and Prost in torrential rain. The greatest single lap in F1 history." },
+    { id: 'YHo5x6T3cSA', eyebrow: '● Abu Dhabi 2021', title: 'Verstappen vs Hamilton', desc: "The most dramatic championship finale ever. Max Verstappen overtakes Lewis Hamilton on the very last lap to clinch his first World Championship." },
+    { id: 'jSOKMWz4MIk', eyebrow: '● Brazil 2008', title: "Hamilton's First Title", desc: "Lewis Hamilton needed 5th place on the final lap. Stuck in 6th, he passed Timo Glock in the last corner to win the championship by a single point." },
+    { id: 'kL_qp5e1bFs', eyebrow: '● Brazil 1991', title: "Senna's Home Victory", desc: "Senna won in Interlagos with a broken gearbox, driving the last 7 laps stuck in 6th gear. He had to be lifted from the car, barely able to hold the trophy." },
+    { id: 'dBkmBMpOh8Q', eyebrow: '● Monza 2020', title: "Gasly's Miracle Win", desc: "Pierre Gasly, demoted from Red Bull a year earlier, won the Italian Grand Prix from P10 in an AlphaTauri — one of the greatest underdog stories ever." },
+    { id: '2bmqdnx5R1I', eyebrow: '● Dijon 1979', title: 'Villeneuve vs Arnoux', desc: "The greatest wheel-to-wheel battle in F1 history. Gilles Villeneuve and René Arnoux traded positions lap after lap, banging wheels at 180mph." },
+  ];
+  const pick = moments[Math.floor(Math.random() * moments.length)];
+  const iframe = document.getElementById('history-video');
+  const title = document.getElementById('history-title');
+  const desc = document.getElementById('history-desc');
+  const eyebrow = document.getElementById('history-eyebrow');
+  if (iframe && title) {
+    iframe.src = `https://www.youtube.com/embed/${pick.id}?rel=0&modestbranding=1&color=red`;
+    title.textContent = pick.title;
+    desc.textContent = pick.desc;
+    eyebrow.textContent = pick.eyebrow;
+  }
+})();
+
+// ── Scroll Car + Parallax ──
+(function(){
+  const car=document.getElementById('scroll-car');
+  const hero=document.querySelector('.next-race-hero');
+  if(!car) return;
+  let ticking=false;
+  window.addEventListener('scroll',()=>{
+    if(!ticking){requestAnimationFrame(()=>{
+      const scrollY=window.scrollY;
+      const maxScroll=document.body.scrollHeight-window.innerHeight;
+      if(maxScroll>0){
+        const pct=scrollY/maxScroll;
+        const moveX=pct*(window.innerWidth-200);
+        car.style.transform=`translateX(${moveX}px)`;
+      }
+      if(hero && scrollY < 600){
+        hero.style.transform=`translateY(${scrollY*0.15}px)`;
+        hero.style.opacity = Math.max(0.3, 1 - scrollY/800);
+      }
+      ticking=false;
+    });ticking=true;}
+  },{passive:true});
+})();
 </script>
 </body>
 </html>
