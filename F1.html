@@ -373,12 +373,13 @@ header {
 .race-card.next:hover { box-shadow: 0 8px 24px rgba(225,6,0,0.16); }
 .race-card-info { flex: 1; min-width: 0; }
 .race-card-circuit-svg {
-  flex-shrink: 0; width: 75px; height: 75px;
+  flex-shrink: 0; width: 90px; height: 90px;
   display: flex; align-items: center; justify-content: center;
-  opacity: 0.3; transition: opacity var(--transition);
+  opacity: 0.6; transition: all var(--transition);
+  background: var(--bg-subtle); border-radius: 10px; padding: 10px;
 }
-.race-card:hover .race-card-circuit-svg { opacity: 0.55; }
-.race-card.next .race-card-circuit-svg { opacity: 0.65; }
+.race-card:hover .race-card-circuit-svg { opacity: 0.85; transform: scale(1.05); }
+.race-card.next .race-card-circuit-svg { opacity: 1; background: rgba(225,6,0,0.06); }
 .race-round {
   font-family: var(--font-display); font-weight: 600; font-size: 0.65rem;
   letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted);
@@ -578,7 +579,7 @@ footer a:hover { color: var(--red); }
   .logo-text { font-size: 1.25rem; }
   .home-fav-card { flex: 0 0 270px; }
   .battle-name { min-width: 90px; font-size: 0.75rem; }
-  .race-card-circuit-svg { width: 55px; height: 55px; }
+  .race-card-circuit-svg { width: 70px; height: 70px; padding: 8px; }
   .section-header { font-size: 1.6rem; }
 }
 </style>
@@ -692,7 +693,7 @@ const CIRCUIT_SVGS = {
   default:'<circle cx="45" cy="40" r="25"/>'
 };
 function getCircuitKey(cid){const m={albert_park:'albert_park',shanghai:'shanghai',suzuka:'suzuka',bahrain:'bahrain',jeddah:'jeddah',miami:'miami',imola:'imola',monaco:'monaco',catalunya:'catalunya',villeneuve:'montreal',red_bull_ring:'red_bull_ring',silverstone:'silverstone',spa:'spa',zandvoort:'zandvoort',monza:'monza',baku:'baku',marina_bay:'marina_bay',americas:'americas',rodriguez:'rodriguez',interlagos:'interlagos',vegas:'vegas',losail:'losail',yas_marina:'yas_marina'};return m[cid]||'default'}
-function getCircuitSVG(cid,color='#e10600'){const k=getCircuitKey(cid);const p=CIRCUIT_SVGS[k]||CIRCUIT_SVGS.default;return `<svg viewBox="0 0 100 80" width="100%" height="100%" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`}
+function getCircuitSVG(cid,color='#e10600'){const k=getCircuitKey(cid);const p=CIRCUIT_SVGS[k]||CIRCUIT_SVGS.default;return `<svg viewBox="0 0 100 80" width="100%" height="100%" fill="none" stroke="${color}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><defs><filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#glow)">${p}</g></svg>`}
 
 let state={schedule:[],driverStandings:[],constructorStandings:[],raceResults:{},latestResult:null,driverImages:{},favourites:JSON.parse(localStorage.getItem('f1pulse_favourites')||'["sainz"]'),lastUpdated:null};
 function saveFavourites(){localStorage.setItem('f1pulse_favourites',JSON.stringify(state.favourites))}
@@ -789,7 +790,7 @@ function renderSchedule(){
     const rd=new Date(race.date+'T'+(race.time||'14:00:00Z')),isPast=rd<now,isNext=!isPast&&!nf;if(isNext)nf=true;
     const dateStr=rd.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const badge=isNext?`<div class="race-badge next-badge">Next Race</div>`:isPast?`<div class="race-badge completed">Completed</div>`:`<div class="race-badge upcoming">Upcoming</div>`;
-    const circuitColor=isNext?'#e10600':isPast?'#ccc':'#999';
+    const circuitColor=isNext?'#e10600':isPast?'#bbb':'#d4a827';
     return `<div class="race-card ${isPast?'past':''} ${isNext?'next':''}">
       <div class="race-card-info"><div class="race-round">Round ${race.round}</div><div class="race-name">${race.raceName}</div>
       <div class="race-circuit-name">${race.Circuit.circuitName} — ${race.Circuit.Location.country}</div>
