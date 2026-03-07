@@ -911,7 +911,7 @@ body > * { position: relative; z-index: 1; }
 
   <!-- SCHEDULE -->
   <section id="page-schedule" class="page">
-    <h2 class="section-header"><span class="red-bar"></span>2025 Race Calendar</h2>
+    <h2 class="section-header"><span class="red-bar"></span>2026 Race Calendar</h2>
     <div id="schedule-grid" class="schedule-grid"><div class="loading"><div class="spinner"></div><div class="loading-text">Loading schedule...</div></div></div>
   </section>
 
@@ -956,10 +956,10 @@ body > * { position: relative; z-index: 1; }
 </div>
 
 <script>
-const API_BASE='https://api.jolpi.ca/ergast/f1', OPENF1_BASE='https://api.openf1.org/v1', CURRENT_YEAR=2025;
+const API_BASE='https://api.jolpi.ca/ergast/f1', OPENF1_BASE='https://api.openf1.org/v1', CURRENT_YEAR=2026;
 const CORS_PROXIES=[url=>url, url=>`https://corsproxy.io/?${encodeURIComponent(url)}`, url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`];
 let workingProxyIndex=0;
-const TEAM_COLORS={red_bull:'#3671C6',mclaren:'#FF8000',ferrari:'#E8002D',mercedes:'#27F4D2',aston_martin:'#229971',alpine:'#0093CC',williams:'#64C4FF',rb:'#6692FF',sauber:'#52E252',haas:'#B6BABD',racing_bulls:'#6692FF',kick_sauber:'#52E252',default:'#888'};
+const TEAM_COLORS={red_bull:'#3671C6',mclaren:'#FF8000',ferrari:'#E8002D',mercedes:'#27F4D2',aston_martin:'#229971',alpine:'#0093CC',williams:'#64C4FF',rb:'#6692FF',sauber:'#52E252',haas:'#B6BABD',racing_bulls:'#6692FF',kick_sauber:'#52E252',audi:'#1E1E1E',cadillac:'#1D6D37',default:'#888'};
 function getTeamColor(id){if(!id)return TEAM_COLORS.default;const k=id.toLowerCase().replace(/\s+/g,'_');for(const[key,c]of Object.entries(TEAM_COLORS))if(k.includes(key)||key.includes(k))return c;return TEAM_COLORS.default}
 
 const CIRCUIT_SVGS = {
