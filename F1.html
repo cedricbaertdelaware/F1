@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Racing Point — Live Formula 1 Dashboard</title>
+<title>Racing Hub — Live Formula 1 Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 24'><path d='M1,16 L2,14 L5,13 L8,11 L13,9 L18,8 L22,8 L26,9.5 L29,12 L30,14 L30,16Z' fill='%23e10600'/><path d='M14,9.5 L17,8.5 L20,8.5 L19,11 L15,11.5Z' fill='%23111'/><path d='M26,9 L28,7.5 L30,7 L31,8 L30,10 L29,11Z' fill='%23cc0500'/><path d='M29,7.5 L31,6.5 L32,7.5 L31,8Z' fill='%23e10600'/><path d='M1,15 L0,14.5 L1,13 L3,14Z' fill='%23cc0500'/><path d='M10,13 L22,12 L24,13.5 L22,14.5 L10,15Z' fill='%23aa0400' opacity='0.4'/><circle cx='7.5' cy='17' r='4' fill='%23222'/><circle cx='7.5' cy='17' r='2.5' fill='%23444'/><circle cx='7.5' cy='17' r='1' fill='%23e10600'/><circle cx='25.5' cy='17' r='4' fill='%23222'/><circle cx='25.5' cy='17' r='2.5' fill='%23444'/><circle cx='25.5' cy='17' r='1' fill='%23e10600'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════
-   RACING POINT — F1 DARK DASHBOARD
+   RACING HUB — F1 DARK DASHBOARD
    Dark · Data-driven · Premium · 2026 Season
    ═══════════════════════════════════════════════ */
 
@@ -398,7 +398,7 @@ header::after {
 /* ── Schedule Grid — 3D Flip Cards ── */
 .schedule-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.75rem; }
 .race-card-wrapper {
-  perspective: 800px; cursor: pointer; height: 145px;
+  perspective: 800px; cursor: pointer; height: 165px;
 }
 .race-card-wrapper.flipped .race-card-inner { transform: rotateY(180deg); }
 .race-card-inner {
@@ -744,6 +744,52 @@ header::after {
 .standings-table tbody tr { cursor: pointer; }
 .constructor-card { cursor: pointer; }
 
+/* ── Points Progress Bar ── */
+.points-bar {
+  width: 100%; height: 4px; background: var(--surface); border-radius: 2px;
+  margin-top: 0.3rem; overflow: hidden;
+}
+.points-bar-fill {
+  height: 100%; border-radius: 2px; transition: width 1s var(--ease);
+  min-width: 2px;
+}
+.driver-flag { font-size: 0.72rem; margin-left: 0.2rem; vertical-align: middle; }
+
+/* ── Circuit Info on Flip Back ── */
+.race-card-back-stats {
+  display: flex; gap: 0.75rem; margin-top: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap;
+}
+.race-card-back-stat {
+  display: flex; flex-direction: column; gap: 0.05rem;
+}
+.rcbs-val {
+  font-family: var(--font-display); font-weight: 800; font-size: 0.82rem;
+  letter-spacing: -0.2px;
+}
+.rcbs-lbl {
+  font-family: var(--font-display); font-size: 0.45rem; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted);
+}
+
+/* ── Calendar Country Flags ── */
+.race-flag { font-size: 1rem; margin-right: 0.15rem; }
+
+/* ── Scroll Reveal Animations ── */
+.reveal {
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ── Constructor Card Enhanced ── */
+.constructor-card {
+  position: relative; overflow: hidden;
+}
+.constructor-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--ccard-color, var(--border));
+}
+
 /* ── Footer ── */
 footer {
   max-width: 1400px; margin: 0 auto; padding: 1.25rem;
@@ -786,7 +832,7 @@ footer a:hover { color: var(--red); }
   .home-fav-number { font-size: 4rem; }
   .battle-name { min-width: 80px; font-size: 0.7rem; }
   .race-card-circuit-svg { width: 56px; height: 56px; padding: 6px; }
-  .race-card-wrapper { height: 135px; }
+  .race-card-wrapper { height: 155px; }
   .section-header { font-size: 1.3rem; }
   .welcome-banner { flex-direction: column-reverse; }
   .welcome-content { padding: 1.25rem; text-align: center; }
@@ -802,7 +848,7 @@ footer a:hover { color: var(--red); }
 <body>
 <header>
   <div class="header-inner">
-    <div class="logo"><div class="logo-mark"></div><div class="logo-text">Racing <span>Point</span></div></div>
+    <div class="logo"><div class="logo-mark"></div><div class="logo-text">Racing <span>Hub</span></div></div>
     <nav class="nav-tabs">
       <button class="nav-tab active" data-page="home">Home</button>
       <button class="nav-tab" data-page="schedule">Calendar</button>
@@ -823,7 +869,7 @@ footer a:hover { color: var(--red); }
     <div class="welcome-banner">
       <div class="welcome-content">
         <div class="welcome-eyebrow">Welcome to</div>
-        <div class="welcome-title">Racing Point</div>
+        <div class="welcome-title">Racing Hub</div>
         <div class="welcome-desc">Your personal F1 dashboard — live standings, race calendar, driver stats & head-to-head comparisons for the 2026 season.</div>
         <div class="welcome-tags">
           <span class="welcome-tag">Live Data</span>
@@ -836,7 +882,7 @@ footer a:hover { color: var(--red); }
           Watch on F1 TV
         </a>
       </div>
-      <div class="welcome-avatar"><img src="f1_cartoon.png" alt="Racing Point mascot" class="welcome-avatar-img"></div>
+      <div class="welcome-avatar"><img src="f1_cartoon.png" alt="Racing Hub mascot" class="welcome-avatar-img"></div>
     </div>
 
     <!-- Season Quick Stats -->
@@ -916,7 +962,7 @@ footer a:hover { color: var(--red); }
 </main>
 
 <footer>
-  Racing Point — Data via <a href="https://api.jolpi.ca/ergast/" target="_blank">Jolpica F1 API</a> &amp; <a href="https://openf1.org" target="_blank">OpenF1</a> — Not affiliated with Formula 1 or FIA — <span id="connection-status">Connecting...</span>
+  Racing Hub — Data via <a href="https://api.jolpi.ca/ergast/" target="_blank">Jolpica F1 API</a> &amp; <a href="https://openf1.org" target="_blank">OpenF1</a> — Not affiliated with Formula 1 or FIA — <span id="connection-status">Connecting...</span>
 </footer>
 
 <div class="detail-modal-overlay" id="detail-modal" onclick="if(event.target===this)closeDetailModal()">
@@ -927,7 +973,7 @@ footer a:hover { color: var(--red); }
 </div>
 <script>
 /* ═══════════════════════════════════════════
-   RACING POINT — Application Logic
+   RACING HUB — Application Logic
    ═══════════════════════════════════════════ */
 
 // ── Config ──
@@ -944,8 +990,8 @@ function getCircuitKey(cid){const m={albert_park:'albert_park',shanghai:'shangha
 function getCircuitSVG(cid,color='#e10600'){const k=getCircuitKey(cid);const p=CIRCUIT_SVGS[k]||CIRCUIT_SVGS.default;return `<svg viewBox="0 0 100 80" width="100%" height="100%" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><defs><filter id="glow"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#glow)">${p}</g></svg>`}
 
 // ── State ──
-let state={schedule:[],driverStandings:[],constructorStandings:[],raceResults:{},latestResult:null,driverImages:{},favourites:JSON.parse(localStorage.getItem('racingpoint_favourites')||'["sainz"]'),lastUpdated:null};
-function saveFavourites(){localStorage.setItem('racingpoint_favourites',JSON.stringify(state.favourites))}
+let state={schedule:[],driverStandings:[],constructorStandings:[],raceResults:{},latestResult:null,driverImages:{},favourites:JSON.parse(localStorage.getItem('racinghub_favourites')||'["sainz"]'),lastUpdated:null};
+function saveFavourites(){localStorage.setItem('racinghub_favourites',JSON.stringify(state.favourites))}
 function isFavourite(id){return state.favourites.includes(id)}
 function toggleFavourite(id){state.favourites=isFavourite(id)?state.favourites.filter(x=>x!==id):[...state.favourites,id];saveFavourites();renderAll()}
 function renderAll(){renderDriverStandings();renderHomeFavourites();renderTop5Battle();renderSeasonStats();if(document.getElementById('page-favourites').classList.contains('active'))renderFavourites()}
@@ -1035,9 +1081,10 @@ function renderUpcomingStrip(){
   const up=state.schedule.filter(r=>new Date(r.date+'T'+(r.time||'14:00:00Z'))>now).slice(0,8);
   if(!up.length){c.innerHTML=`<div style="color:var(--text-muted);padding:1rem">No upcoming races</div>`;return}
   c.innerHTML=up.map((r,i)=>{const rd=new Date(r.date+'T'+(r.time||'14:00:00Z'));
+    const flag=getCountryFlag(r.Circuit.Location.country);
     return `<div class="upcoming-mini ${i===0?'is-next':''}" onclick="navigateTo('schedule')">
       <div class="upcoming-mini-round">${i===0?'● Next':'Round '+r.round}</div>
-      <div class="upcoming-mini-name">${r.raceName.replace(' Grand Prix',' GP')}</div>
+      <div class="upcoming-mini-name">${flag} ${r.raceName.replace(' Grand Prix',' GP')}</div>
       <div class="upcoming-mini-date">${rd.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div></div>`}).join('');
 }
 
@@ -1099,6 +1146,45 @@ const CIRCUIT_DESC = {
 };
 function getCircuitDesc(cid){ return CIRCUIT_DESC[getCircuitKey(cid)] || CIRCUIT_DESC.default; }
 
+// ── Circuit Metadata (length, turns, lap record) ──
+const CIRCUIT_META = {
+  albert_park:{len:'5.278 km',turns:14,record:'1:19.813'},
+  shanghai:{len:'5.451 km',turns:16,record:'1:32.238'},
+  suzuka:{len:'5.807 km',turns:18,record:'1:30.983'},
+  bahrain:{len:'5.412 km',turns:15,record:'1:31.447'},
+  jeddah:{len:'6.174 km',turns:27,record:'1:30.734'},
+  miami:{len:'5.412 km',turns:19,record:'1:29.708'},
+  imola:{len:'4.909 km',turns:19,record:'1:15.484'},
+  monaco:{len:'3.337 km',turns:19,record:'1:12.909'},
+  catalunya:{len:'4.657 km',turns:14,record:'1:16.330'},
+  villeneuve:{len:'4.361 km',turns:14,record:'1:13.078'},
+  red_bull_ring:{len:'4.318 km',turns:10,record:'1:05.619'},
+  silverstone:{len:'5.891 km',turns:18,record:'1:27.097'},
+  spa:{len:'7.004 km',turns:19,record:'1:46.286'},
+  zandvoort:{len:'4.259 km',turns:14,record:'1:11.097'},
+  monza:{len:'5.793 km',turns:11,record:'1:21.046'},
+  baku:{len:'6.003 km',turns:20,record:'1:43.009'},
+  marina_bay:{len:'4.940 km',turns:19,record:'1:35.867'},
+  americas:{len:'5.513 km',turns:20,record:'1:36.169'},
+  rodriguez:{len:'4.304 km',turns:17,record:'1:17.774'},
+  interlagos:{len:'4.309 km',turns:15,record:'1:10.540'},
+  vegas:{len:'6.201 km',turns:17,record:'1:35.490'},
+  losail:{len:'5.380 km',turns:16,record:'1:24.319'},
+  yas_marina:{len:'5.281 km',turns:16,record:'1:26.103'},
+  madrid:{len:'5.470 km',turns:18,record:'N/A'},
+};
+function getCircuitMeta(cid){ return CIRCUIT_META[getCircuitKey(cid)] || {len:'—',turns:'—',record:'—'}; }
+
+// ── Country Flags for Circuits ──
+const COUNTRY_TO_FLAG = {
+  Australia:'🇦🇺',China:'🇨🇳',Japan:'🇯🇵',Bahrain:'🇧🇭','Saudi Arabia':'🇸🇦',USA:'🇺🇸',
+  Italy:'🇮🇹',Monaco:'🇲🇨',Spain:'🇪🇸',Canada:'🇨🇦',Austria:'🇦🇹',UK:'🇬🇧',Belgium:'🇧🇪',
+  Netherlands:'🇳🇱',Azerbaijan:'🇦🇿',Singapore:'🇸🇬',Mexico:'🇲🇽',Brazil:'🇧🇷',
+  Qatar:'🇶🇦',UAE:'🇦🇪','United States':'🇺🇸','United Kingdom':'🇬🇧',Hungary:'🇭🇺',
+  France:'🇫🇷',Portugal:'🇵🇹',Germany:'🇩🇪',Turkey:'🇹🇷',Russia:'🇷🇺',Türkiye:'🇹🇷',
+};
+function getCountryFlag(country){ return COUNTRY_TO_FLAG[country]||'🏁'; }
+
 function renderSchedule(){
   const c=document.getElementById('schedule-grid'),now=new Date();let nf=false;
   c.innerHTML=state.schedule.map(race=>{
@@ -1107,16 +1193,23 @@ function renderSchedule(){
     const badge=isNext?`<div class="race-badge next-badge">Next Race</div>`:isPast?`<div class="race-badge completed">Completed</div>`:`<div class="race-badge upcoming">Upcoming</div>`;
     const circuitColor=isNext?'#e10600':isPast?'#444':'#666';
     const desc=getCircuitDesc(race.Circuit.circuitId);
+    const meta=getCircuitMeta(race.Circuit.circuitId);
+    const flag=getCountryFlag(race.Circuit.Location.country);
     return `<div class="race-card-wrapper ${isPast?'past':''} ${isNext?'next':''}" onclick="this.classList.toggle('flipped')">
       <div class="race-card-inner">
         <div class="race-card-front">
-          <div class="race-card-info"><div class="race-round">Round ${race.round}</div><div class="race-name">${race.raceName}</div>
+          <div class="race-card-info"><div class="race-round">Round ${race.round}</div><div class="race-name"><span class="race-flag">${flag}</span>${race.raceName}</div>
           <div class="race-circuit-name">${race.Circuit.circuitName} — ${race.Circuit.Location.country}</div>
           <div class="race-date">${dateStr}</div>${badge}</div>
           <div class="race-card-circuit-svg">${getCircuitSVG(race.Circuit.circuitId, circuitColor)}</div>
         </div>
         <div class="race-card-back">
           <div class="race-card-back-header"><span class="dot"></span>${race.Circuit.circuitName}</div>
+          <div class="race-card-back-stats">
+            <div class="race-card-back-stat"><div class="rcbs-val">${meta.len}</div><div class="rcbs-lbl">Length</div></div>
+            <div class="race-card-back-stat"><div class="rcbs-val">${meta.turns}</div><div class="rcbs-lbl">Turns</div></div>
+            <div class="race-card-back-stat"><div class="rcbs-val">${meta.record}</div><div class="rcbs-lbl">Lap Record</div></div>
+          </div>
           <div class="race-card-back-desc">${desc}</div>
           <div class="race-card-back-hint">Click to flip back</div>
         </div>
@@ -1125,19 +1218,25 @@ function renderSchedule(){
 }
 
 function buildDriverTable(standings,showFav=true){
+  const maxPts=standings.length?Math.max(...standings.map(s=>parseFloat(s.points)||1)):1;
   return `<div class="table-wrapper"><table class="standings-table"><thead><tr><th>Pos</th><th>Driver</th><th>Points</th><th>Wins</th>${showFav?'<th></th>':''}</tr></thead><tbody>
-    ${standings.map(s=>{const d=s.Driver,c=s.Constructors?.[0],fav=isFavourite(d.driverId),pc=parseInt(s.position)<=3?`pos-${s.position}`:'',img=getDriverImg(d.familyName,d.code);
-      return `<tr class="${fav?'favourite-row':''}" onclick="showDriverDetail('${d.driverId}')"><td class="pos-cell ${pc}">${s.position}</td>
-        <td><div class="driver-name-cell">${img?`<img src="${img}" class="driver-headshot-sm" onerror="this.style.display='none'">`:''}<div class="team-color-dot" style="background:${getTeamColor(c?.constructorId)}"></div>
-        <div><div class="driver-name"><span class="first">${d.givenName}</span> ${d.familyName}</div><div class="driver-team">${c?.name||''}</div></div></div></td>
-        <td class="points-cell">${s.points}</td><td class="wins-cell">${s.wins}</td>
+    ${standings.map(s=>{const d=s.Driver,c=s.Constructors?.[0],fav=isFavourite(d.driverId),pc=parseInt(s.position)<=3?`pos-${s.position}`:'',img=getDriverImg(d.familyName,d.code),tc=getTeamColor(c?.constructorId);
+      const pct=maxPts>0?((parseFloat(s.points)/maxPts)*100).toFixed(1):0;
+      return `<tr class="${fav?'favourite-row':''}" onclick="showDriverDetail('${d.driverId}')" style="--row-team:${tc}">
+        <td class="pos-cell ${pc}">${s.position}</td>
+        <td><div class="driver-name-cell">
+          ${img?`<img src="${img}" class="driver-headshot-sm" onerror="this.style.display='none'">`:''}<div class="team-color-dot" style="background:${tc}"></div>
+          <div><div class="driver-name"><span class="first">${d.givenName}</span> ${d.familyName} <span class="driver-flag">${getFlag(d.nationality)}</span></div>
+          <div class="driver-team">${c?.name||''}</div></div></div></td>
+        <td><div class="points-cell">${s.points}</div><div class="points-bar"><div class="points-bar-fill" style="width:${pct}%;background:${tc}"></div></div></td>
+        <td class="wins-cell">${s.wins}</td>
         ${showFav?`<td><button class="fav-star ${fav?'active':''}" onclick="event.stopPropagation();toggleFavourite('${d.driverId}')" title="${fav?'Remove':'Add'} favourite">★</button></td>`:''}</tr>`}).join('')}</tbody></table></div>`;
 }
 function renderDriverStandings(){document.getElementById('driver-standings').innerHTML=buildDriverTable(state.driverStandings)}
 
 function renderConstructorStandings(){
   document.getElementById('constructor-standings').innerHTML=`<div class="constructors-grid">${state.constructorStandings.map(s=>{const c=s.Constructor,pc=parseInt(s.position)<=3?`p${s.position}`:'';
-    return `<div class="constructor-card" onclick="showConstructorDetail('${c.constructorId}')"><div class="constructor-pos ${pc}">${s.position}</div><div class="constructor-color-bar" style="background:${getTeamColor(c.constructorId)}"></div>
+    return `<div class="constructor-card" onclick="showConstructorDetail('${c.constructorId}')" style="--ccard-color:${getTeamColor(c.constructorId)}"><div class="constructor-pos ${pc}">${s.position}</div><div class="constructor-color-bar" style="background:${getTeamColor(c.constructorId)}"></div>
       <div class="constructor-info"><div class="constructor-name">${c.name}</div><div class="constructor-drivers">${c.nationality}</div></div>
       <div><div class="constructor-points">${s.points}</div><div class="constructor-points-label">Points</div></div></div>`}).join('')}</div>`;
 }
@@ -1375,6 +1474,23 @@ init();
 // ── Hero Parallax ──
 (function(){const hero=document.querySelector('.next-race-hero');if(!hero)return;let t=false;
   window.addEventListener('scroll',()=>{if(!t){requestAnimationFrame(()=>{const y=window.scrollY;if(y<500){hero.style.transform=`translateY(${y*0.12}px)`;hero.style.opacity=Math.max(0.4,1-y/700)}t=false});t=true}},{passive:true})})();
+// ── Scroll Reveal ──
+(function(){
+  const obs = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  },{threshold:0.1});
+  // Observe all section headers and cards after a short delay for dynamic content
+  function observeElements(){
+    document.querySelectorAll('.section-header, .card-static, .stats-row, .welcome-banner, .home-fav-scroll, .compare-section').forEach(el=>{
+      if(!el.classList.contains('reveal')){ el.classList.add('reveal'); obs.observe(el); }
+    });
+  }
+  observeElements();
+  // Re-observe after data loads
+  const origInit = init;
+  setTimeout(observeElements, 2000);
+  setTimeout(observeElements, 5000);
+})();
 </script>
 </body>
 </html>
