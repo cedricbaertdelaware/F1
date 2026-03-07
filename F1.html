@@ -395,16 +395,48 @@ header::after {
 }
 .battle-bar-row.fav-highlight .battle-name { color: var(--red); font-weight: 700; }
 
-/* ── Schedule Grid ── */
+/* ── Schedule Grid — 3D Flip Cards ── */
 .schedule-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.75rem; }
-.race-card {
+.race-card-wrapper {
+  perspective: 800px; cursor: pointer; height: 145px;
+}
+.race-card-wrapper.flipped .race-card-inner { transform: rotateY(180deg); }
+.race-card-inner {
+  position: relative; width: 100%; height: 100%;
+  transition: transform 0.6s var(--ease);
+  transform-style: preserve-3d;
+}
+.race-card-front, .race-card-back {
+  position: absolute; inset: 0; backface-visibility: hidden;
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 1rem 1.25rem;
-  transition: all var(--transition); display: flex; gap: 0.85rem; align-items: center;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
-.race-card:hover { border-color: var(--border-light); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.race-card.past { opacity: 0.35; }
-.race-card.next { border-color: var(--red); box-shadow: 0 0 16px rgba(225,6,0,0.08); }
+.race-card-wrapper:hover .race-card-front,
+.race-card-wrapper:hover .race-card-back { border-color: var(--border-light); box-shadow: var(--shadow-md); }
+.race-card-front { display: flex; gap: 0.85rem; align-items: center; z-index: 2; }
+.race-card-back {
+  transform: rotateY(180deg); display: flex; flex-direction: column;
+  justify-content: center; overflow: hidden;
+}
+.race-card-back-header {
+  font-family: var(--font-display); font-weight: 700; font-size: 0.9rem;
+  margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem;
+}
+.race-card-back-header .dot { width: 5px; height: 5px; background: var(--red); border-radius: 50%; }
+.race-card-back-desc {
+  font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.race-card-back-hint {
+  font-family: var(--font-display); font-size: 0.5rem; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted);
+  margin-top: auto; padding-top: 0.4rem;
+}
+.race-card-wrapper.past .race-card-front,
+.race-card-wrapper.past .race-card-back { opacity: 0.35; }
+.race-card-wrapper.next .race-card-front,
+.race-card-wrapper.next .race-card-back { border-color: var(--red); box-shadow: 0 0 16px rgba(225,6,0,0.08); }
 .race-card-info { flex: 1; min-width: 0; }
 .race-card-circuit-svg {
   flex-shrink: 0; width: 72px; height: 72px;
@@ -412,8 +444,8 @@ header::after {
   opacity: 0.4; transition: all var(--transition); background: var(--surface);
   border-radius: 8px; padding: 8px;
 }
-.race-card:hover .race-card-circuit-svg { opacity: 0.7; }
-.race-card.next .race-card-circuit-svg { opacity: 0.9; background: rgba(225,6,0,0.06); }
+.race-card-wrapper:hover .race-card-circuit-svg { opacity: 0.7; }
+.race-card-wrapper.next .race-card-circuit-svg { opacity: 0.9; background: rgba(225,6,0,0.06); }
 .race-round { font-family: var(--font-display); font-weight: 700; font-size: 0.58rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); }
 .race-name { font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: -0.2px; margin: 0.15rem 0; }
 .race-circuit-name { color: var(--text-secondary); font-size: 0.78rem; margin-bottom: 0.5rem; }
@@ -662,6 +694,7 @@ footer a:hover { color: var(--red); }
   .home-fav-number { font-size: 4rem; }
   .battle-name { min-width: 80px; font-size: 0.7rem; }
   .race-card-circuit-svg { width: 56px; height: 56px; padding: 6px; }
+  .race-card-wrapper { height: 135px; }
   .section-header { font-size: 1.3rem; }
   .welcome-banner { flex-direction: column-reverse; }
   .welcome-content { padding: 1.25rem; text-align: center; }
@@ -938,6 +971,36 @@ function renderLatestResult(){
     <div style="text-align:center;margin-top:.6rem"><button class="refresh-btn" onclick="navigateTo('results')" style="font-size:.6rem;padding:.3rem .75rem">View Full Results →</button></div>`;
 }
 
+// ── Circuit Descriptions ──
+const CIRCUIT_DESC = {
+  albert_park: "Street circuit around a picturesque lake in Melbourne. Famous for season-opening drama, with unpredictable weather and frequent Safety Cars shaking up the order.",
+  shanghai: "Known for its unique snail-shaped layout and massive 1.2km back straight. The hairpin at the end creates spectacular late-braking overtakes.",
+  suzuka: "A legendary figure-eight layout beloved by drivers. The Esses and 130R are among the fastest corners in F1. Wet races here have produced some of the sport's greatest moments.",
+  bahrain: "The desert circuit that pioneered night racing in F1. Multiple overtaking zones and heavy tyre degradation make for strategic battles under the floodlights.",
+  jeddah: "The fastest street circuit on the calendar, averaging over 250km/h. Narrow walls and blind corners make it one of the most dangerous tracks in modern F1.",
+  miami: "Built around Hard Rock Stadium with a fake marina. Three DRS zones and high-speed sections create plenty of overtaking opportunities in the Florida heat.",
+  imola: "Autodromo Enzo e Dino Ferrari — steeped in history and emotion. Named after Ferrari's founder and his son. Famous for the Tamburello curve and Senna's legacy.",
+  monaco: "The jewel of F1. Racing through the streets of Monte Carlo since 1929. Qualifying is everything — overtaking is nearly impossible on this tight, glamorous track.",
+  catalunya: "Barcelona's technical circuit is the ultimate car test. If a car works here, it works everywhere. The final sector was redesigned in 2023 for better racing.",
+  villeneuve: "Named after Gilles Villeneuve, this island circuit in Montreal features the infamous 'Wall of Champions' that has caught out many legends on the final chicane.",
+  red_bull_ring: "Short, fast and dramatic in the Austrian Alps. Just 10 corners but packed with elevation changes and overtaking spots. The views are spectacular.",
+  silverstone: "The home of British motorsport and F1's first-ever race in 1950. Maggotts-Becketts-Chapel is the most iconic high-speed sequence in racing.",
+  spa: "Spa-Francorchamps is the ultimate drivers' circuit. Eau Rouge/Raidillon is the most famous corner complex in motorsport. Unpredictable Ardennes weather adds chaos.",
+  zandvoort: "Returned to F1 in 2021 for Max Verstappen's home race. The banked final corner is unique in modern F1, creating a wall of orange Dutch fans.",
+  monza: "The Temple of Speed — the fastest track on the calendar. Monza's long straights and the passionate Tifosi atmosphere make it one of F1's most special races.",
+  baku: "A street circuit with medieval old town walls and a 2.2km flat-out blast along the Caspian Sea. Produces the most unpredictable races on the calendar.",
+  marina_bay: "Singapore's night race through the city streets. Brutally hot and humid conditions over 2 hours test driver endurance to the absolute limit.",
+  americas: "COTA in Austin features the famous Turn 1 climb, inspired by iconic corners from circuits worldwide. A modern classic that consistently delivers great racing.",
+  rodriguez: "Mexico City's high altitude (2,240m) starves engines of power and reduces downforce. The Foro Sol stadium section creates an incredible atmosphere.",
+  interlagos: "Interlagos in São Paulo runs anti-clockwise and is known for producing dramatic finales. The passionate Brazilian fans and unpredictable weather create magic.",
+  vegas: "Racing down the Las Vegas Strip at night with casinos as backdrop. The long straights and cool desert air create unique racing conditions.",
+  losail: "Qatar's Losail circuit under the floodlights. High-speed sweeping corners and heavy tyre wear challenge teams to find the right strategy in extreme heat.",
+  yas_marina: "Abu Dhabi's season-finale venue with the iconic hotel straddling the track. Day-to-night transition during the race creates a stunning visual spectacle.",
+  madrid: "Brand new street circuit at the IFEMA exhibition centre. Features fast straights and technical sections through Madrid's modern business district.",
+  default: "A world-class Formula 1 circuit hosting the pinnacle of motorsport."
+};
+function getCircuitDesc(cid){ return CIRCUIT_DESC[getCircuitKey(cid)] || CIRCUIT_DESC.default; }
+
 function renderSchedule(){
   const c=document.getElementById('schedule-grid'),now=new Date();let nf=false;
   c.innerHTML=state.schedule.map(race=>{
@@ -945,11 +1008,22 @@ function renderSchedule(){
     const dateStr=rd.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const badge=isNext?`<div class="race-badge next-badge">Next Race</div>`:isPast?`<div class="race-badge completed">Completed</div>`:`<div class="race-badge upcoming">Upcoming</div>`;
     const circuitColor=isNext?'#e10600':isPast?'#444':'#666';
-    return `<div class="race-card ${isPast?'past':''} ${isNext?'next':''}">
-      <div class="race-card-info"><div class="race-round">Round ${race.round}</div><div class="race-name">${race.raceName}</div>
-      <div class="race-circuit-name">${race.Circuit.circuitName} — ${race.Circuit.Location.country}</div>
-      <div class="race-date">${dateStr}</div>${badge}</div>
-      <div class="race-card-circuit-svg">${getCircuitSVG(race.Circuit.circuitId, circuitColor)}</div></div>`}).join('');
+    const desc=getCircuitDesc(race.Circuit.circuitId);
+    return `<div class="race-card-wrapper ${isPast?'past':''} ${isNext?'next':''}" onclick="this.classList.toggle('flipped')">
+      <div class="race-card-inner">
+        <div class="race-card-front">
+          <div class="race-card-info"><div class="race-round">Round ${race.round}</div><div class="race-name">${race.raceName}</div>
+          <div class="race-circuit-name">${race.Circuit.circuitName} — ${race.Circuit.Location.country}</div>
+          <div class="race-date">${dateStr}</div>${badge}</div>
+          <div class="race-card-circuit-svg">${getCircuitSVG(race.Circuit.circuitId, circuitColor)}</div>
+        </div>
+        <div class="race-card-back">
+          <div class="race-card-back-header"><span class="dot"></span>${race.Circuit.circuitName}</div>
+          <div class="race-card-back-desc">${desc}</div>
+          <div class="race-card-back-hint">Click to flip back</div>
+        </div>
+      </div>
+    </div>`}).join('');
 }
 
 function buildDriverTable(standings,showFav=true){
