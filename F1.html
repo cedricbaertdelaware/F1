@@ -219,6 +219,19 @@ header::after {
   background: rgba(255,255,255,0.04); padding: 0.25rem 0.5rem; border-radius: 5px;
   border: 1px solid var(--border);
 }
+.f1tv-btn {
+  display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 1rem;
+  font-family: var(--font-display); font-weight: 700; font-size: 0.75rem;
+  letter-spacing: 0.3px; color: #fff; background: var(--red);
+  padding: 0.55rem 1.2rem; border-radius: 8px; text-decoration: none;
+  transition: all var(--transition);
+  box-shadow: 0 2px 10px var(--red-glow);
+}
+.f1tv-btn:hover {
+  background: var(--red-dark); transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--red-glow);
+}
+.f1tv-btn svg { flex-shrink: 0; }
 .welcome-avatar { flex-shrink: 0; position: relative; z-index: 1; padding: 0 1rem 0 0; }
 .welcome-avatar-img {
   width: 150px; height: auto; border-radius: 10px;
@@ -693,6 +706,10 @@ footer a:hover { color: var(--red); }
           <span class="welcome-tag">Head-to-Head</span>
           <span class="welcome-tag">Race Calendar</span>
         </div>
+        <a href="https://f1tv.formula1.com/" target="_blank" class="f1tv-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Watch on F1 TV
+        </a>
       </div>
       <div class="welcome-avatar"><img src="f1_cartoon.png" alt="Racing Point mascot" class="welcome-avatar-img"></div>
     </div>
