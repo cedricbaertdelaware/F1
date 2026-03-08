@@ -1080,9 +1080,15 @@ let dataSource=''; // 'openf1' or 'jolpica'
 
 // OpenF1 helpers
 async function openf1Fetch(ep){
-  const r=await fetch(`${OPENF1_BASE}${ep}`,{signal:AbortSignal.timeout(10000)});
-  if(!r.ok)throw new Error(`OpenF1 ${r.status}`);
-  return r.json();
+  const url=`${OPENF1_BASE}${ep}`;
+  try{
+    const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
+    if(!r.ok)throw new Error(`OpenF1 HTTP ${r.status} for ${ep}`);
+    return r.json();
+  }catch(e){
+    console.warn(`OpenF1 fetch failed: ${ep}`,e.message);
+    throw e;
+  }
 }
 
 // Get latest race session key from OpenF1
@@ -1162,13 +1168,16 @@ function openf1ToJolpicaConstructorStandings(championship){
 // Try OpenF1 first, then Jolpica
 async function loadDriverStandingsOpenF1(){
   try{
+    console.log('OpenF1: Finding latest race session...');
     const sess=await getLatestRaceSessionKey();
-    if(!sess)throw new Error('No race sessions');
+    if(!sess)throw new Error('No race sessions found');
     const sk=sess.session_key;
+    console.log('OpenF1: Using session_key='+sk+' ('+sess.circuit_short_name+')');
     const [championship, drivers]=await Promise.all([
       openf1Fetch(`/championship_drivers?session_key=${sk}`),
       openf1Fetch(`/drivers?session_key=${sk}`)
     ]);
+    console.log('OpenF1: Got '+championship?.length+' championship entries, '+drivers?.length+' drivers');
     if(!championship?.length)throw new Error('No championship data');
     state.driverStandings=openf1ToJolpicaDriverStandings(championship,drivers);
     state.lastUpdated=new Date();
@@ -1176,8 +1185,9 @@ async function loadDriverStandingsOpenF1(){
     state._latestMeetingKey=sess.meeting_key;
     state._latestSession=sess;
     dataSource='openf1';
+    console.log('OpenF1: Driver standings loaded successfully ('+state.driverStandings.length+' drivers)');
     return true;
-  }catch(e){return false}
+  }catch(e){console.warn('OpenF1 driver standings failed:',e.message);return false}
 }
 
 async function loadConstructorStandingsOpenF1(){
@@ -1210,41 +1220,43 @@ async function loadLatestResultOpenF1(){
   try{
     const sk=state._latestSessionKey;
     if(!sk)throw new Error('No session key');
-    // Fetch session result, drivers, and session info in parallel
     const [results, drivers]=await Promise.all([
       openf1Fetch(`/session_result?session_key=${sk}`),
       openf1Fetch(`/drivers?session_key=${sk}`)
     ]);
     if(!results?.length)throw new Error('No results');
-    // Get session info from cached data or fetch
     const sessInfo=state._latestSession||{};
     const drvMap={};drivers.forEach(d=>{drvMap[d.driver_number]=d});
-    // session_result position field may vary — try common field names
-    results.sort((a,b)=>(a.position||a.classified_position||99)-(b.position||b.classified_position||99));
-    // Filter out entries without a valid position
-    const validResults=results.filter(r=>(r.position||r.classified_position));
-    if(!validResults.length)throw new Error('No valid results');
+    // Sort by position, push null positions (DNF/DNS) to end
+    results.sort((a,b)=>(a.position||999)-(b.position||999));
     state.latestResult={
-      raceName:sessInfo.meeting_name||sessInfo.session_name||'Latest Race',
-      round:String(sessInfo.round_number||sessInfo.meeting_key||'1'),
+      raceName:sessInfo.session_name?sessInfo.country_name+' Grand Prix':'Latest Race',
+      round:'1',
       Circuit:{circuitName:sessInfo.circuit_short_name||'',circuitId:'',Location:{country:sessInfo.country_name||''}},
       date:sessInfo.date_start?sessInfo.date_start.split('T')[0]:'',
-      Results:validResults.map(r=>{
+      Results:results.map(r=>{
         const d=drvMap[r.driver_number]||{};
-        const pos=r.position||r.classified_position||'';
+        const pos=r.position;
+        // Format gap/time display
+        let timeStr='';
+        if(r.gap_to_leader===0||r.gap_to_leader==='0')timeStr='Winner';
+        else if(typeof r.gap_to_leader==='string')timeStr=r.gap_to_leader;
+        else if(r.gap_to_leader>0)timeStr='+'+r.gap_to_leader.toFixed(3)+'s';
+        else if(r.dnf)timeStr='DNF';
+        else if(r.dns)timeStr='DNS';
         return {
-          position:String(pos),
+          position:pos!=null?String(pos):(r.dnf?'DNF':r.dns?'DNS':'-'),
           Driver:{driverId:(d.last_name||'').toLowerCase().replace(/\s+/g,'_'),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},
           Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},
-          status:r.status||r.finish_status||'Finished',
+          status:r.dnf?'DNF':r.dns?'DNS':'Finished',
           points:String(r.points!=null?r.points:'0'),
-          Time:{time:r.total_race_time||r.time||r.gap_to_leader||''},
-          grid:String(r.grid_position||r.starting_position||'')
+          Time:{time:timeStr},
+          grid:''
         };
       })
     };
     return true;
-  }catch(e){console.log('OpenF1 latest result error:',e.message);return false}
+  }catch(e){console.warn('OpenF1 latest result error:',e.message);return false}
 }
 
 // Cache OpenF1 race sessions for the season
@@ -1352,13 +1364,18 @@ async function loadRaceResults(){
       ]);
       if(results?.length){
         const drvMap={};drivers.forEach(d=>{drvMap[d.driver_number]=d});
-        const validResults=results.filter(r=>(r.position||r.classified_position));
-        validResults.sort((a,b)=>(a.position||a.classified_position||99)-(b.position||b.classified_position||99));
+        results.sort((a,b)=>(a.position||999)-(b.position||999));
         const raceObj={
-          raceName:sess.meeting_name||sess.session_name||'Race',round,
+          raceName:sess.country_name?sess.country_name+' Grand Prix':'Race',round,
           Circuit:{circuitName:sess.circuit_short_name||'',circuitId:'',Location:{country:sess.country_name||''}},
-          Results:validResults.map(r=>{const d=drvMap[r.driver_number]||{};
-            return{position:String(r.position||r.classified_position||''),Driver:{driverId:(d.last_name||'').toLowerCase().replace(/\s+/g,'_'),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},status:r.status||r.finish_status||'Finished',points:String(r.points!=null?r.points:'0'),Time:{time:r.total_race_time||r.time||r.gap_to_leader||''},grid:String(r.grid_position||r.starting_position||'')}
+          Results:results.map(r=>{const d=drvMap[r.driver_number]||{};
+            let timeStr='';
+            if(r.gap_to_leader===0||r.gap_to_leader==='0')timeStr='Winner';
+            else if(typeof r.gap_to_leader==='string')timeStr=r.gap_to_leader;
+            else if(r.gap_to_leader>0)timeStr='+'+r.gap_to_leader.toFixed(3)+'s';
+            else if(r.dnf)timeStr='DNF';
+            else if(r.dns)timeStr='DNS';
+            return{position:r.position!=null?String(r.position):(r.dnf?'DNF':r.dns?'DNS':'-'),Driver:{driverId:(d.last_name||'').toLowerCase().replace(/\s+/g,'_'),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},status:r.dnf?'DNF':r.dns?'DNS':'Finished',points:String(r.points!=null?r.points:'0'),Time:{time:timeStr},grid:''}
           })
         };
         if(raceObj.Results.length){state.raceResults[round]=raceObj;renderRaceResults(raceObj);return}
@@ -1836,18 +1853,20 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetailModal()})
 async function init(){
   const st=document.getElementById('connection-status');
   try{
-    // Step 1: Load schedule (Jolpica) and driver images (OpenF1) in parallel
-    await Promise.all([loadDriverImages(),loadSchedule()]);
-    // Step 2: Load standings sequentially — driver standings first (it finds the session key),
-    //         then constructor standings and latest result reuse it
+    // Step 1: Load schedule from Jolpica (doesn't use OpenF1)
+    await loadSchedule();
+    // Step 2: Load driver standings from OpenF1 (this also fetches drivers with headshots)
     await loadDriverStandings();
+    // Step 3: If OpenF1 failed and we don't have driver images yet, load them separately
+    if(!Object.keys(state.driverImages).length) await loadDriverImages();
+    // Step 4: Load constructor standings and latest result (reuse cached session key)
     await Promise.all([loadConstructorStandings(),loadLatestResult()]);
     const srcLabel=dataSource==='openf1'?'OpenF1 (live)':'Jolpica F1';
     st.innerHTML=`<span style="color:var(--green)">● Connected</span> via ${srcLabel}`;
     renderHomeFavourites();renderTop5Battle();renderLatestResult();renderDriverStandings();renderFavourites();renderSeasonStats();
     // Load accurate circuit outlines in background (non-blocking)
     loadAllCircuitSVGs();
-  }catch(e){st.innerHTML=`<span style="color:var(--red)">● Connection failed</span>`}
+  }catch(e){console.error('Init failed:',e);st.innerHTML=`<span style="color:var(--red)">● Connection failed</span>`}
 }
 init();
 
