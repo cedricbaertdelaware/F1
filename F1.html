@@ -978,6 +978,7 @@ footer a:hover { color: var(--red); }
 
 // ── Config ──
 const API_BASE='https://api.jolpi.ca/ergast/f1', OPENF1_BASE='https://api.openf1.org/v1', CURRENT_YEAR=2026;
+let API_YEAR=CURRENT_YEAR; // May fall back if current year data not yet available
 const CORS_PROXIES=[url=>url, url=>`https://corsproxy.io/?${encodeURIComponent(url)}`, url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`];
 let workingProxyIndex=0;
 
@@ -1074,12 +1075,269 @@ function getDriverImg(fn,code){if(!fn)return null;return state.driverImages[fn.t
 function imgOrPH(fn,code,sz,cls){const u=getDriverImg(fn,code);if(u)return `<img src="${u}" alt="${fn}" class="${cls}" style="width:${sz}px;height:${sz}px" onerror="this.outerHTML='<div class=\\'${cls}-placeholder\\' style=\\'width:${sz}px;height:${sz}px\\'>${(fn||'?')[0]}</div>'">`;return `<div class="${cls}-placeholder" style="width:${sz}px;height:${sz}px">${(fn||'?')[0]}</div>`}
 function getOrd(n){const v=parseInt(n)%100,s=['th','st','nd','rd'];return s[(v-20)%10]||s[v]||s[0]}
 
-// ── Data Loaders ──
-async function loadSchedule(){try{const d=await fetchAPI(`/${CURRENT_YEAR}.json`);state.schedule=d.MRData.RaceTable.Races||[];renderNextRaceHero();renderSchedule();renderUpcomingStrip();populateResultsSelect();renderSeasonStats()}catch(e){document.getElementById('schedule-grid').innerHTML=`<div class="error-msg">Failed to load schedule.</div>`}}
-async function loadDriverStandings(){try{const d=await fetchAPI(`/${CURRENT_YEAR}/driverstandings.json`);const l=d.MRData?.StandingsTable?.StandingsLists;state.driverStandings=l?.length?l[0].DriverStandings:[];state.lastUpdated=new Date();renderDriverStandings();renderHomeFavourites();renderTop5Battle();renderFavourites();renderSeasonStats();populateCompareSelects();const el=document.getElementById('drivers-updated');if(el)el.textContent=`Updated ${state.lastUpdated.toLocaleTimeString()}`}catch(e){document.getElementById('driver-standings').innerHTML=`<div class="error-msg">Failed to load standings.</div>`}}
-async function loadConstructorStandings(){try{const d=await fetchAPI(`/${CURRENT_YEAR}/constructorstandings.json`);const l=d.MRData?.StandingsTable?.StandingsLists;state.constructorStandings=l?.length?l[0].ConstructorStandings:[];renderConstructorStandings();renderSeasonStats();const el=document.getElementById('constructors-updated');if(el)el.textContent=`Updated ${new Date().toLocaleTimeString()}`}catch(e){document.getElementById('constructor-standings').innerHTML=`<div class="error-msg">Failed to load standings.</div>`}}
-async function loadLatestResult(){try{const d=await fetchAPI(`/${CURRENT_YEAR}/results/last.json`);const r=d.MRData?.RaceTable?.Races;if(r?.length){state.latestResult=r[0];renderLatestResult()}else document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results yet this season</div>`}catch(e){document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results available</div>`}}
-async function loadRaceResults(){const round=document.getElementById('results-race-select').value;if(!round)return;const c=document.getElementById('race-results');c.innerHTML=`<div class="loading"><div class="spinner"></div></div>`;try{const d=await fetchAPI(`/${CURRENT_YEAR}/${round}/results.json`);const r=d.MRData?.RaceTable?.Races;if(r?.length){state.raceResults[round]=r[0];renderRaceResults(r[0])}else c.innerHTML=`<div class="error-msg">No results yet.</div>`}catch(e){c.innerHTML=`<div class="error-msg">Failed to load results.</div>`}}
+// ── Data Loaders — OpenF1 primary, Jolpica fallback ──
+let dataSource=''; // 'openf1' or 'jolpica'
+
+// OpenF1 helpers
+async function openf1Fetch(ep){
+  const r=await fetch(`${OPENF1_BASE}${ep}`,{signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error(`OpenF1 ${r.status}`);
+  return r.json();
+}
+
+// Get latest race session key from OpenF1
+async function getLatestRaceSessionKey(){
+  const sessions=await openf1Fetch('/sessions?session_name=Race&year='+CURRENT_YEAR);
+  if(!sessions?.length)return null;
+  // Sort by date desc, find most recent past race
+  sessions.sort((a,b)=>new Date(b.date_start)-new Date(a.date_start));
+  const now=new Date();
+  return sessions.find(s=>new Date(s.date_end)<now)||sessions[0];
+}
+
+// Convert OpenF1 championship_drivers + drivers to Jolpica-compatible format
+function openf1ToJolpicaDriverStandings(championship, drivers){
+  // Build driver lookup by number
+  const drvMap={};
+  drivers.forEach(d=>{
+    drvMap[d.driver_number]={
+      driverId:(d.last_name||'').toLowerCase().replace(/\s+/g,'_'),
+      givenName:d.first_name||'',
+      familyName:d.last_name||'',
+      code:d.name_acronym||'',
+      nationality:'',
+      permanentNumber:String(d.driver_number),
+      dateOfBirth:'',
+      url:`https://en.wikipedia.org/wiki/${(d.first_name||'')}_${(d.last_name||'')}`
+    };
+    // Store headshot and team info
+    if(d.headshot_url){
+      const hiRes=d.headshot_url.replace('/1col/image.png','/2col/image.png');
+      state.driverImages[(d.last_name||'').toLowerCase()]=hiRes;
+      if(d.name_acronym)state.driverImages[d.name_acronym.toLowerCase()]=hiRes;
+    }
+    drvMap[d.driver_number]._teamName=d.team_name||'';
+    drvMap[d.driver_number]._teamColour=d.team_colour||'';
+  });
+  // Sort championship by position_current
+  championship.sort((a,b)=>(a.position_current||99)-(b.position_current||99));
+  return championship.map(c=>{
+    const drv=drvMap[c.driver_number]||{driverId:'unknown_'+c.driver_number,givenName:'#'+c.driver_number,familyName:'',code:'',nationality:'',permanentNumber:String(c.driver_number),dateOfBirth:'',url:''};
+    const teamName=drv._teamName||'';
+    const teamId=teamName.toLowerCase().replace(/\s+/g,'_');
+    return {
+      position:String(c.position_current||''),
+      points:String(c.points_current||0),
+      wins:'0', // OpenF1 doesn't provide wins directly
+      Driver:{...drv,_teamName:undefined,_teamColour:undefined},
+      Constructors:[{constructorId:teamId,name:teamName,nationality:''}]
+    };
+  });
+}
+
+// Convert OpenF1 championship_teams to Jolpica-compatible format
+function openf1ToJolpicaConstructorStandings(championship){
+  championship.sort((a,b)=>(a.position_current||99)-(b.position_current||99));
+  return championship.map(c=>{
+    const teamId=(c.team_name||'').toLowerCase().replace(/\s+/g,'_');
+    return {
+      position:String(c.position_current||''),
+      points:String(c.points_current||0),
+      wins:'0',
+      Constructor:{constructorId:teamId,name:c.team_name||'',nationality:''}
+    };
+  });
+}
+
+// Try OpenF1 first, then Jolpica
+async function loadDriverStandingsOpenF1(){
+  try{
+    const sess=await getLatestRaceSessionKey();
+    if(!sess)throw new Error('No race sessions');
+    const sk=sess.session_key;
+    const [championship, drivers]=await Promise.all([
+      openf1Fetch(`/championship_drivers?session_key=${sk}`),
+      openf1Fetch(`/drivers?session_key=${sk}`)
+    ]);
+    if(!championship?.length)throw new Error('No championship data');
+    state.driverStandings=openf1ToJolpicaDriverStandings(championship,drivers);
+    state.lastUpdated=new Date();
+    state._latestSessionKey=sk;
+    state._latestMeetingKey=sess.meeting_key;
+    dataSource='openf1';
+    return true;
+  }catch(e){return false}
+}
+
+async function loadConstructorStandingsOpenF1(){
+  try{
+    const sk=state._latestSessionKey;
+    if(!sk)throw new Error('No session key');
+    const championship=await openf1Fetch(`/championship_teams?session_key=${sk}`);
+    if(!championship?.length)throw new Error('No team championship data');
+    state.constructorStandings=openf1ToJolpicaConstructorStandings(championship);
+    return true;
+  }catch(e){return false}
+}
+
+async function loadLatestResultOpenF1(){
+  try{
+    const sk=state._latestSessionKey;
+    if(!sk)throw new Error('No session key');
+    const [results, drivers, sessions]=await Promise.all([
+      openf1Fetch(`/session_result?session_key=${sk}`),
+      openf1Fetch(`/drivers?session_key=${sk}`),
+      openf1Fetch(`/sessions?session_key=${sk}`)
+    ]);
+    if(!results?.length)throw new Error('No results');
+    const sessInfo=sessions?.[0]||{};
+    const drvMap={};drivers.forEach(d=>{drvMap[d.driver_number]=d});
+    results.sort((a,b)=>(a.position||99)-(b.position||99));
+    // Convert to Jolpica race result format
+    state.latestResult={
+      raceName:sessInfo.meeting_name||'Latest Race',
+      round:String(sessInfo.meeting_key||''),
+      Circuit:{circuitName:sessInfo.circuit_short_name||'',circuitId:'',Location:{country:sessInfo.country_name||''}},
+      date:sessInfo.date_start?sessInfo.date_start.split('T')[0]:'',
+      Results:results.map(r=>{
+        const d=drvMap[r.driver_number]||{};
+        return {
+          position:String(r.position||''),
+          Driver:{driverId:(d.last_name||'').toLowerCase(),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},
+          Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},
+          status:r.status||'Finished',
+          points:String(r.points||0),
+          Time:{time:r.time||''},
+          grid:String(r.grid_position||'')
+        };
+      })
+    };
+    return true;
+  }catch(e){return false}
+}
+
+// Schedule — always try Jolpica first (it has better calendar data), fall back to OpenF1 meetings
+async function loadSchedule(){
+  try{
+    const d=await fetchAPI(`/${CURRENT_YEAR}.json`);
+    state.schedule=d.MRData.RaceTable.Races||[];
+    if(!state.schedule.length)throw new Error('Empty');
+  }catch(e){
+    // Fallback: build schedule from OpenF1 meetings
+    try{
+      const meetings=await openf1Fetch(`/meetings?year=${CURRENT_YEAR}`);
+      if(meetings?.length){
+        state.schedule=meetings.map((m,i)=>({
+          round:String(i+1),
+          raceName:m.meeting_name,
+          date:m.date_start?m.date_start.split('T')[0]:'',
+          time:m.date_start?m.date_start.split('T')[1]:'14:00:00Z',
+          Circuit:{circuitId:m.circuit_short_name?.toLowerCase().replace(/\s+/g,'_')||'',circuitName:m.circuit_short_name||m.location||'',Location:{country:m.country_name||'',locality:m.location||''}}
+        }));
+      }
+    }catch(e2){}
+  }
+  renderNextRaceHero();renderSchedule();renderUpcomingStrip();populateResultsSelect();renderSeasonStats();
+}
+
+// Main loaders with OpenF1-first strategy
+async function loadDriverStandings(){
+  const ok=await loadDriverStandingsOpenF1();
+  if(!ok){
+    // Fallback to Jolpica
+    try{
+      // Try current year first, then previous
+      let d;
+      try{d=await fetchAPI(`/${CURRENT_YEAR}/driverstandings.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/driverstandings.json`);API_YEAR=CURRENT_YEAR-1}
+      const l=d.MRData?.StandingsTable?.StandingsLists;
+      state.driverStandings=l?.length?l[0].DriverStandings:[];
+      if(state.driverStandings.length)dataSource='jolpica';
+    }catch(e){document.getElementById('driver-standings').innerHTML=`<div class="error-msg">Failed to load standings.</div>`;return}
+  }
+  state.lastUpdated=new Date();
+  renderDriverStandings();renderHomeFavourites();renderTop5Battle();renderFavourites();renderSeasonStats();populateCompareSelects();
+  const el=document.getElementById('drivers-updated');
+  if(el)el.textContent=`Updated ${state.lastUpdated.toLocaleTimeString()}`;
+  if(dataSource==='jolpica'&&API_YEAR!==CURRENT_YEAR)showApiBanner();
+}
+
+async function loadConstructorStandings(){
+  const ok=await loadConstructorStandingsOpenF1();
+  if(!ok){
+    try{
+      const yr=API_YEAR||CURRENT_YEAR;
+      let d;
+      try{d=await fetchAPI(`/${CURRENT_YEAR}/constructorstandings.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/constructorstandings.json`)}
+      const l=d.MRData?.StandingsTable?.StandingsLists;
+      state.constructorStandings=l?.length?l[0].ConstructorStandings:[];
+    }catch(e){document.getElementById('constructor-standings').innerHTML=`<div class="error-msg">Failed to load standings.</div>`;return}
+  }
+  renderConstructorStandings();renderSeasonStats();
+  const el=document.getElementById('constructors-updated');
+  if(el)el.textContent=`Updated ${new Date().toLocaleTimeString()}`;
+}
+
+async function loadLatestResult(){
+  const ok=await loadLatestResultOpenF1();
+  if(!ok){
+    try{
+      const yr=API_YEAR||CURRENT_YEAR;
+      let d;
+      try{d=await fetchAPI(`/${CURRENT_YEAR}/results/last.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/results/last.json`)}
+      const r=d.MRData?.RaceTable?.Races;
+      if(r?.length){state.latestResult=r[0]}
+      else{document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results yet this season</div>`;return}
+    }catch(e){document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results available</div>`;return}
+  }
+  renderLatestResult();
+}
+
+async function loadRaceResults(){
+  const round=document.getElementById('results-race-select').value;if(!round)return;
+  const c=document.getElementById('race-results');
+  c.innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  // Try OpenF1 first via session lookup
+  try{
+    const sessions=await openf1Fetch(`/sessions?session_name=Race&year=${CURRENT_YEAR}`);
+    const sess=sessions?.find(s=>String(s.meeting_key)===round)||sessions?.[parseInt(round)-1];
+    if(sess){
+      const [results,drivers]=await Promise.all([
+        openf1Fetch(`/session_result?session_key=${sess.session_key}`),
+        openf1Fetch(`/drivers?session_key=${sess.session_key}`)
+      ]);
+      if(results?.length){
+        const drvMap={};drivers.forEach(d=>{drvMap[d.driver_number]=d});
+        results.sort((a,b)=>(a.position||99)-(b.position||99));
+        const raceObj={
+          raceName:sess.meeting_name||'Race',round,
+          Circuit:{circuitName:sess.circuit_short_name||'',circuitId:'',Location:{country:sess.country_name||''}},
+          Results:results.map(r=>{const d=drvMap[r.driver_number]||{};
+            return{position:String(r.position||''),Driver:{driverId:(d.last_name||'').toLowerCase(),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},status:r.status||'Finished',points:String(r.points||0),Time:{time:r.time||''},grid:String(r.grid_position||'')}
+          })
+        };
+        state.raceResults[round]=raceObj;renderRaceResults(raceObj);return;
+      }
+    }
+  }catch(e){}
+  // Fallback: Jolpica
+  try{
+    const yr=API_YEAR||CURRENT_YEAR;
+    const d=await fetchAPI(`/${yr}/${round}/results.json`);
+    const r=d.MRData?.RaceTable?.Races;
+    if(r?.length){state.raceResults[round]=r[0];renderRaceResults(r[0])}
+    else c.innerHTML=`<div class="error-msg">No results yet.</div>`;
+  }catch(e){c.innerHTML=`<div class="error-msg">Failed to load results.</div>`}
+}
+
+function showApiBanner(){
+  const existing=document.getElementById('api-year-banner');if(existing)return;
+  const banner=document.createElement('div');
+  banner.id='api-year-banner';
+  banner.style.cssText='background:rgba(225,6,0,0.08);border:1px solid rgba(225,6,0,0.2);border-radius:10px;padding:0.75rem 1.25rem;margin-bottom:1rem;font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:0.5rem';
+  banner.innerHTML=`<span style="color:var(--red);font-size:1rem">⚠</span> <span>Showing <strong>${API_YEAR}</strong> standings — ${CURRENT_YEAR} data is not yet available. The ${CURRENT_YEAR} calendar is shown below.</span>`;
+  const container=document.getElementById('page-home');
+  if(container){const firstChild=container.querySelector('.next-race-hero');if(firstChild)firstChild.after(banner);else container.prepend(banner)}
+}
 
 // ═══ RENDERERS ═══
 
@@ -1533,8 +1791,8 @@ async function init(){
   const st=document.getElementById('connection-status');
   try{
     await Promise.all([loadDriverImages(),loadSchedule(),loadDriverStandings(),loadConstructorStandings(),loadLatestResult()]);
-    const pn=['Direct API','corsproxy.io','allorigins.win'];
-    st.innerHTML=`<span style="color:var(--green)">● Connected</span> via ${pn[workingProxyIndex]}`;
+    const srcLabel=dataSource==='openf1'?'OpenF1 (live)':'Jolpica F1';
+    st.innerHTML=`<span style="color:var(--green)">● Connected</span> via ${srcLabel}`;
     renderHomeFavourites();renderTop5Battle();renderLatestResult();renderDriverStandings();renderFavourites();renderSeasonStats();
     // Load accurate circuit outlines in background (non-blocking)
     loadAllCircuitSVGs();
