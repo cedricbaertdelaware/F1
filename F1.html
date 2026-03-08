@@ -1086,13 +1086,17 @@ async function openf1Fetch(ep){
 }
 
 // Get latest race session key from OpenF1
+let _openf1RaceSessions=null;
 async function getLatestRaceSessionKey(){
   const sessions=await openf1Fetch('/sessions?session_name=Race&year='+CURRENT_YEAR);
   if(!sessions?.length)return null;
-  // Sort by date desc, find most recent past race
-  sessions.sort((a,b)=>new Date(b.date_start)-new Date(a.date_start));
+  // Sort by date and cache for later use by loadRaceResults
+  sessions.sort((a,b)=>new Date(a.date_start)-new Date(b.date_start));
+  _openf1RaceSessions=sessions;
+  // Find most recent past race
   const now=new Date();
-  return sessions.find(s=>new Date(s.date_end)<now)||sessions[0];
+  const pastSessions=[...sessions].reverse();
+  return pastSessions.find(s=>new Date(s.date_end||s.date_start)<now)||sessions[sessions.length-1];
 }
 
 // Convert OpenF1 championship_drivers + drivers to Jolpica-compatible format
@@ -1170,6 +1174,7 @@ async function loadDriverStandingsOpenF1(){
     state.lastUpdated=new Date();
     state._latestSessionKey=sk;
     state._latestMeetingKey=sess.meeting_key;
+    state._latestSession=sess;
     dataSource='openf1';
     return true;
   }catch(e){return false}
@@ -1205,36 +1210,55 @@ async function loadLatestResultOpenF1(){
   try{
     const sk=state._latestSessionKey;
     if(!sk)throw new Error('No session key');
-    const [results, drivers, sessions]=await Promise.all([
+    // Fetch session result, drivers, and session info in parallel
+    const [results, drivers]=await Promise.all([
       openf1Fetch(`/session_result?session_key=${sk}`),
-      openf1Fetch(`/drivers?session_key=${sk}`),
-      openf1Fetch(`/sessions?session_key=${sk}`)
+      openf1Fetch(`/drivers?session_key=${sk}`)
     ]);
     if(!results?.length)throw new Error('No results');
-    const sessInfo=sessions?.[0]||{};
+    // Get session info from cached data or fetch
+    const sessInfo=state._latestSession||{};
     const drvMap={};drivers.forEach(d=>{drvMap[d.driver_number]=d});
-    results.sort((a,b)=>(a.position||99)-(b.position||99));
-    // Convert to Jolpica race result format
+    // session_result position field may vary — try common field names
+    results.sort((a,b)=>(a.position||a.classified_position||99)-(b.position||b.classified_position||99));
+    // Filter out entries without a valid position
+    const validResults=results.filter(r=>(r.position||r.classified_position));
+    if(!validResults.length)throw new Error('No valid results');
     state.latestResult={
-      raceName:sessInfo.meeting_name||'Latest Race',
-      round:String(sessInfo.meeting_key||''),
+      raceName:sessInfo.meeting_name||sessInfo.session_name||'Latest Race',
+      round:String(sessInfo.round_number||sessInfo.meeting_key||'1'),
       Circuit:{circuitName:sessInfo.circuit_short_name||'',circuitId:'',Location:{country:sessInfo.country_name||''}},
       date:sessInfo.date_start?sessInfo.date_start.split('T')[0]:'',
-      Results:results.map(r=>{
+      Results:validResults.map(r=>{
         const d=drvMap[r.driver_number]||{};
+        const pos=r.position||r.classified_position||'';
         return {
-          position:String(r.position||''),
-          Driver:{driverId:(d.last_name||'').toLowerCase(),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},
+          position:String(pos),
+          Driver:{driverId:(d.last_name||'').toLowerCase().replace(/\s+/g,'_'),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},
           Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},
-          status:r.status||'Finished',
-          points:String(r.points||0),
-          Time:{time:r.time||''},
-          grid:String(r.grid_position||'')
+          status:r.status||r.finish_status||'Finished',
+          points:String(r.points!=null?r.points:'0'),
+          Time:{time:r.total_race_time||r.time||r.gap_to_leader||''},
+          grid:String(r.grid_position||r.starting_position||'')
         };
       })
     };
     return true;
-  }catch(e){return false}
+  }catch(e){console.log('OpenF1 latest result error:',e.message);return false}
+}
+
+// Cache OpenF1 race sessions for the season
+async function getOpenF1RaceSessions(){
+  if(_openf1RaceSessions)return _openf1RaceSessions;
+  try{
+    const sessions=await openf1Fetch(`/sessions?session_name=Race&year=${CURRENT_YEAR}`);
+    if(sessions?.length){
+      sessions.sort((a,b)=>new Date(a.date_start)-new Date(b.date_start));
+      _openf1RaceSessions=sessions;
+      return sessions;
+    }
+  }catch(e){}
+  return [];
 }
 
 // Schedule — always try Jolpica first (it has better calendar data), fall back to OpenF1 meetings
@@ -1248,6 +1272,7 @@ async function loadSchedule(){
     try{
       const meetings=await openf1Fetch(`/meetings?year=${CURRENT_YEAR}`);
       if(meetings?.length){
+        meetings.sort((a,b)=>new Date(a.date_start)-new Date(b.date_start));
         state.schedule=meetings.map((m,i)=>({
           round:String(i+1),
           raceName:m.meeting_name,
@@ -1267,7 +1292,6 @@ async function loadDriverStandings(){
   if(!ok){
     // Fallback to Jolpica
     try{
-      // Try current year first, then previous
       let d;
       try{d=await fetchAPI(`/${CURRENT_YEAR}/driverstandings.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/driverstandings.json`);API_YEAR=CURRENT_YEAR-1}
       const l=d.MRData?.StandingsTable?.StandingsLists;
@@ -1286,7 +1310,6 @@ async function loadConstructorStandings(){
   const ok=await loadConstructorStandingsOpenF1();
   if(!ok){
     try{
-      const yr=API_YEAR||CURRENT_YEAR;
       let d;
       try{d=await fetchAPI(`/${CURRENT_YEAR}/constructorstandings.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/constructorstandings.json`)}
       const l=d.MRData?.StandingsTable?.StandingsLists;
@@ -1302,7 +1325,6 @@ async function loadLatestResult(){
   const ok=await loadLatestResultOpenF1();
   if(!ok){
     try{
-      const yr=API_YEAR||CURRENT_YEAR;
       let d;
       try{d=await fetchAPI(`/${CURRENT_YEAR}/results/last.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/results/last.json`)}
       const r=d.MRData?.RaceTable?.Races;
@@ -1317,10 +1339,12 @@ async function loadRaceResults(){
   const round=document.getElementById('results-race-select').value;if(!round)return;
   const c=document.getElementById('race-results');
   c.innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
-  // Try OpenF1 first via session lookup
+  // Try OpenF1 first — map round number to session_key via cached sessions list
   try{
-    const sessions=await openf1Fetch(`/sessions?session_name=Race&year=${CURRENT_YEAR}`);
-    const sess=sessions?.find(s=>String(s.meeting_key)===round)||sessions?.[parseInt(round)-1];
+    const sessions=await getOpenF1RaceSessions();
+    // Match by round index (round 1 = first session in sorted list)
+    const roundIdx=parseInt(round)-1;
+    const sess=sessions[roundIdx];
     if(sess){
       const [results,drivers]=await Promise.all([
         openf1Fetch(`/session_result?session_key=${sess.session_key}`),
@@ -1328,18 +1352,19 @@ async function loadRaceResults(){
       ]);
       if(results?.length){
         const drvMap={};drivers.forEach(d=>{drvMap[d.driver_number]=d});
-        results.sort((a,b)=>(a.position||99)-(b.position||99));
+        const validResults=results.filter(r=>(r.position||r.classified_position));
+        validResults.sort((a,b)=>(a.position||a.classified_position||99)-(b.position||b.classified_position||99));
         const raceObj={
-          raceName:sess.meeting_name||'Race',round,
+          raceName:sess.meeting_name||sess.session_name||'Race',round,
           Circuit:{circuitName:sess.circuit_short_name||'',circuitId:'',Location:{country:sess.country_name||''}},
-          Results:results.map(r=>{const d=drvMap[r.driver_number]||{};
-            return{position:String(r.position||''),Driver:{driverId:(d.last_name||'').toLowerCase(),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},status:r.status||'Finished',points:String(r.points||0),Time:{time:r.time||''},grid:String(r.grid_position||'')}
+          Results:validResults.map(r=>{const d=drvMap[r.driver_number]||{};
+            return{position:String(r.position||r.classified_position||''),Driver:{driverId:(d.last_name||'').toLowerCase().replace(/\s+/g,'_'),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},status:r.status||r.finish_status||'Finished',points:String(r.points!=null?r.points:'0'),Time:{time:r.total_race_time||r.time||r.gap_to_leader||''},grid:String(r.grid_position||r.starting_position||'')}
           })
         };
-        state.raceResults[round]=raceObj;renderRaceResults(raceObj);return;
+        if(raceObj.Results.length){state.raceResults[round]=raceObj;renderRaceResults(raceObj);return}
       }
     }
-  }catch(e){}
+  }catch(e){console.log('OpenF1 race results error:',e.message)}
   // Fallback: Jolpica
   try{
     const yr=API_YEAR||CURRENT_YEAR;
