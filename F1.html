@@ -982,7 +982,7 @@ let API_YEAR=CURRENT_YEAR; // May fall back if current year data not yet availab
 const CORS_PROXIES=[url=>url, url=>`https://corsproxy.io/?${encodeURIComponent(url)}`, url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`];
 let workingProxyIndex=0;
 
-const TEAM_COLORS={red_bull:'#3671C6',mclaren:'#FF8000',ferrari:'#E8002D',mercedes:'#27F4D2',aston_martin:'#229971',alpine:'#0093CC',williams:'#64C4FF',rb:'#6692FF',sauber:'#52E252',haas:'#B6BABD',racing_bulls:'#6692FF',kick_sauber:'#52E252',audi:'#1E1E1E',cadillac:'#1D6D37',default:'#888'};
+let TEAM_COLORS={red_bull:'#3671C6',mclaren:'#FF8000',ferrari:'#E8002D',mercedes:'#27F4D2',aston_martin:'#229971',alpine:'#0093CC',williams:'#64C4FF',rb:'#6692FF',sauber:'#52E252',haas:'#B6BABD',racing_bulls:'#6692FF',kick_sauber:'#52E252',audi:'#1E1E1E',cadillac:'#1D6D37',default:'#888'};
 function getTeamColor(id){if(!id)return TEAM_COLORS.default;const k=id.toLowerCase().replace(/\s+/g,'_');for(const[key,c]of Object.entries(TEAM_COLORS))if(k.includes(key)||key.includes(k))return c;return TEAM_COLORS.default}
 
 // ── Circuit SVGs — GeoJSON-sourced accurate outlines ──
@@ -1118,6 +1118,11 @@ function openf1ToJolpicaDriverStandings(championship, drivers){
     }
     drvMap[d.driver_number]._teamName=d.team_name||'';
     drvMap[d.driver_number]._teamColour=d.team_colour||'';
+    // Register OpenF1 team colours dynamically into TEAM_COLORS
+    if(d.team_colour&&d.team_name){
+      const tid=d.team_name.toLowerCase().replace(/\s+/g,'_');
+      TEAM_COLORS[tid]='#'+d.team_colour;
+    }
   });
   // Sort championship by position_current
   championship.sort((a,b)=>(a.position_current||99)-(b.position_current||99));
@@ -1125,11 +1130,12 @@ function openf1ToJolpicaDriverStandings(championship, drivers){
     const drv=drvMap[c.driver_number]||{driverId:'unknown_'+c.driver_number,givenName:'#'+c.driver_number,familyName:'',code:'',nationality:'',permanentNumber:String(c.driver_number),dateOfBirth:'',url:''};
     const teamName=drv._teamName||'';
     const teamId=teamName.toLowerCase().replace(/\s+/g,'_');
+    const {_teamName:_tn, _teamColour:_tc, ...driverClean}=drv;
     return {
       position:String(c.position_current||''),
       points:String(c.points_current||0),
       wins:'0', // OpenF1 doesn't provide wins directly
-      Driver:{...drv,_teamName:undefined,_teamColour:undefined},
+      Driver:driverClean,
       Constructors:[{constructorId:teamId,name:teamName,nationality:''}]
     };
   });
@@ -1177,7 +1183,22 @@ async function loadConstructorStandingsOpenF1(){
     if(!championship?.length)throw new Error('No team championship data');
     state.constructorStandings=openf1ToJolpicaConstructorStandings(championship);
     return true;
-  }catch(e){return false}
+  }catch(e){
+    // Fallback: derive constructor standings from driver standings
+    if(state.driverStandings?.length){
+      const teamMap={};
+      state.driverStandings.forEach(s=>{
+        const c=s.Constructors?.[0];if(!c)return;
+        if(!teamMap[c.constructorId])teamMap[c.constructorId]={name:c.name,points:0};
+        teamMap[c.constructorId].points+=parseFloat(s.points)||0;
+      });
+      const teams=Object.entries(teamMap).map(([id,t])=>({Constructor:{constructorId:id,name:t.name,nationality:''},position:'0',points:String(t.points),wins:'0'}));
+      teams.sort((a,b)=>parseFloat(b.points)-parseFloat(a.points));
+      teams.forEach((t,i)=>t.position=String(i+1));
+      if(teams.length){state.constructorStandings=teams;return true}
+    }
+    return false;
+  }
 }
 
 async function loadLatestResultOpenF1(){
@@ -1790,7 +1811,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetailModal()})
 async function init(){
   const st=document.getElementById('connection-status');
   try{
-    await Promise.all([loadDriverImages(),loadSchedule(),loadDriverStandings(),loadConstructorStandings(),loadLatestResult()]);
+    // Step 1: Load schedule (Jolpica) and driver images (OpenF1) in parallel
+    await Promise.all([loadDriverImages(),loadSchedule()]);
+    // Step 2: Load standings sequentially — driver standings first (it finds the session key),
+    //         then constructor standings and latest result reuse it
+    await loadDriverStandings();
+    await Promise.all([loadConstructorStandings(),loadLatestResult()]);
     const srcLabel=dataSource==='openf1'?'OpenF1 (live)':'Jolpica F1';
     st.innerHTML=`<span style="color:var(--green)">● Connected</span> via ${srcLabel}`;
     renderHomeFavourites();renderTop5Battle();renderLatestResult();renderDriverStandings();renderFavourites();renderSeasonStats();
