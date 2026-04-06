@@ -978,86 +978,16 @@ footer a:hover { color: var(--red); }
 
 // ── Config ──
 const API_BASE='https://api.jolpi.ca/ergast/f1', OPENF1_BASE='https://api.openf1.org/v1', CURRENT_YEAR=2026;
-let API_YEAR=CURRENT_YEAR; // May fall back if current year data not yet available
 const CORS_PROXIES=[url=>url, url=>`https://corsproxy.io/?${encodeURIComponent(url)}`, url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`];
 let workingProxyIndex=0;
 
-let TEAM_COLORS={red_bull:'#3671C6',mclaren:'#FF8000',ferrari:'#E8002D',mercedes:'#27F4D2',aston_martin:'#229971',alpine:'#0093CC',williams:'#64C4FF',rb:'#6692FF',sauber:'#52E252',haas:'#B6BABD',racing_bulls:'#6692FF',kick_sauber:'#52E252',audi:'#1E1E1E',cadillac:'#1D6D37',default:'#888'};
+const TEAM_COLORS={red_bull:'#3671C6',mclaren:'#FF8000',ferrari:'#E8002D',mercedes:'#27F4D2',aston_martin:'#229971',alpine:'#0093CC',williams:'#64C4FF',rb:'#6692FF',sauber:'#52E252',haas:'#B6BABD',racing_bulls:'#6692FF',kick_sauber:'#52E252',audi:'#1E1E1E',cadillac:'#1D6D37',default:'#888'};
 function getTeamColor(id){if(!id)return TEAM_COLORS.default;const k=id.toLowerCase().replace(/\s+/g,'_');for(const[key,c]of Object.entries(TEAM_COLORS))if(k.includes(key)||key.includes(k))return c;return TEAM_COLORS.default}
 
-// ── Circuit SVGs — GeoJSON-sourced accurate outlines ──
-// Maps circuitId → GeoJSON file id in bacinger/f1-circuits repo
-const CIRCUIT_GEOJSON_MAP={albert_park:'au-1953',shanghai:'cn-2004',suzuka:'jp-1962',bahrain:'bh-2004',jeddah:'sa-2021',miami:'us-2022',imola:'it-1953',monaco:'mc-1929',catalunya:'es-1991',villeneuve:'ca-1978',red_bull_ring:'at-1969',silverstone:'gb-1948',spa:'be-1925',zandvoort:'nl-1948',monza:'it-1914',baku:'az-2016',marina_bay:'sg-2008',americas:'us-2012',rodriguez:'mx-1959',interlagos:'br-1940',vegas:'us-2023',losail:'qa-2004',yas_marina:'ae-2009',madrid:'es-2026',hungaroring:'hu-1986'};
-const CIRCUIT_SVG_CACHE={};
-const CIRCUIT_SVGS_FALLBACK={default:'<circle cx="50" cy="40" r="25"/>'};
-
-function getCircuitKey(cid){
-  const m={albert_park:'albert_park',shanghai:'shanghai',suzuka:'suzuka',bahrain:'bahrain',jeddah:'jeddah',miami:'miami',imola:'imola',monaco:'monaco',catalunya:'catalunya',villeneuve:'montreal',red_bull_ring:'red_bull_ring',silverstone:'silverstone',spa:'spa',zandvoort:'zandvoort',monza:'monza',baku:'baku',marina_bay:'marina_bay',americas:'americas',rodriguez:'rodriguez',interlagos:'interlagos',vegas:'vegas',losail:'losail',yas_marina:'yas_marina',madrid:'madrid',hungaroring:'hungaroring'};
-  return m[cid]||'default';
-}
-
-// Convert GeoJSON coordinates to SVG path fitted in viewBox
-function geoToSvgPath(coords,vw=100,vh=80,pad=6){
-  if(!coords||coords.length<3)return null;
-  const lons=coords.map(c=>c[0]),lats=coords.map(c=>c[1]);
-  const minLon=Math.min(...lons),maxLon=Math.max(...lons);
-  const minLat=Math.min(...lats),maxLat=Math.max(...lats);
-  const dLon=maxLon-minLon||1,dLat=maxLat-minLat||1;
-  const drawW=vw-pad*2,drawH=vh-pad*2;
-  const scale=Math.min(drawW/dLon,drawH/dLat);
-  const offX=pad+(drawW-dLon*scale)/2, offY=pad+(drawH-dLat*scale)/2;
-  // Simplify: keep every nth point to reduce path size
-  const step=Math.max(1,Math.floor(coords.length/60));
-  const pts=coords.filter((_,i)=>i%step===0||i===coords.length-1);
-  const svgPts=pts.map(c=>{
-    const x=offX+(c[0]-minLon)*scale;
-    const y=offY+(maxLat-c[1])*scale; // flip Y
-    return [Math.round(x*10)/10, Math.round(y*10)/10];
-  });
-  // Build smooth path using Catmull-Rom → cubic bezier approximation
-  let d=`M${svgPts[0][0]},${svgPts[0][1]}`;
-  for(let i=1;i<svgPts.length;i++){
-    const p0=svgPts[Math.max(0,i-2)],p1=svgPts[Math.max(0,i-1)],p2=svgPts[i],p3=svgPts[Math.min(svgPts.length-1,i+1)];
-    const cp1x=p1[0]+(p2[0]-p0[0])/6, cp1y=p1[1]+(p2[1]-p0[1])/6;
-    const cp2x=p2[0]-(p3[0]-p1[0])/6, cp2y=p2[1]-(p3[1]-p1[1])/6;
-    d+=` C${Math.round(cp1x*10)/10},${Math.round(cp1y*10)/10} ${Math.round(cp2x*10)/10},${Math.round(cp2y*10)/10} ${p2[0]},${p2[1]}`;
-  }
-  d+='Z';
-  return `<path d="${d}"/>`;
-}
-
-// Fetch GeoJSON from bacinger/f1-circuits and cache as SVG path
-async function loadCircuitSVG(circuitKey){
-  const geoId=CIRCUIT_GEOJSON_MAP[circuitKey];
-  if(!geoId)return null;
-  if(CIRCUIT_SVG_CACHE[circuitKey])return CIRCUIT_SVG_CACHE[circuitKey];
-  try{
-    const url=`https://raw.githubusercontent.com/bacinger/f1-circuits/master/circuits/${geoId}.geojson`;
-    const proxyUrl=`https://corsproxy.io/?${encodeURIComponent(url)}`;
-    const r=await fetch(proxyUrl,{signal:AbortSignal.timeout(6000)});
-    if(!r.ok)throw new Error();
-    const data=await r.json();
-    const coords=data?.geometry?.coordinates;
-    const path=geoToSvgPath(coords);
-    if(path){CIRCUIT_SVG_CACHE[circuitKey]=path;return path;}
-  }catch(e){}
-  return null;
-}
-
-function getCircuitSVG(cid,color='#e10600'){
-  const k=getCircuitKey(cid);
-  const p=CIRCUIT_SVG_CACHE[k]||CIRCUIT_SVGS_FALLBACK[k]||CIRCUIT_SVGS_FALLBACK.default;
-  const filterId='glow-'+k;
-  return `<svg viewBox="0 0 100 80" width="100%" height="100%" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><filter id="${filterId}"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#${filterId})">${p}</g></svg>`;
-}
-
-// Pre-load all circuit outlines
-async function loadAllCircuitSVGs(){
-  const keys=Object.keys(CIRCUIT_GEOJSON_MAP);
-  await Promise.allSettled(keys.map(k=>loadCircuitSVG(k)));
-  // Re-render schedule if already loaded to show accurate outlines
-  if(state.schedule.length)renderSchedule();
-}
+// ── Circuit SVGs ──
+const CIRCUIT_SVGS={albert_park:'<path d="M30,65 C25,55 20,40 25,30 C30,20 40,15 50,12 C60,10 70,15 75,25 C78,32 72,42 65,45 C58,48 55,40 50,38 C45,36 40,42 38,50 C36,58 35,65 30,65Z"/>',shanghai:'<path d="M20,50 L30,20 L40,25 L45,15 L55,20 L50,35 L60,40 L70,25 L80,30 L75,50 L80,65 L65,70 L55,60 L40,65 L25,70Z"/>',suzuka:'<path d="M25,55 C20,45 25,35 35,30 C40,28 45,32 48,28 C51,24 46,18 50,14 C54,10 62,12 65,18 C68,24 64,30 68,35 C72,40 80,38 78,48 C76,58 65,62 55,65 C45,68 35,65 25,55Z"/>',bahrain:'<path d="M40,15 L55,15 L60,25 L65,20 L70,25 L65,40 L70,50 L65,60 L55,65 L50,55 L45,65 L35,60 L30,45 L35,35 L30,25Z"/>',jeddah:'<path d="M25,70 L28,55 L25,40 L30,30 L28,20 L35,12 L45,15 L50,25 L55,20 L60,25 L58,35 L65,45 L60,55 L55,60 L50,55 L45,65 L35,70Z"/>',miami:'<path d="M20,45 L25,25 L40,20 L55,22 L70,18 L80,25 L75,40 L80,55 L70,60 L55,55 L50,65 L35,68 L25,60Z"/>',imola:'<path d="M20,45 L30,30 L45,25 L55,30 L60,20 L70,25 L75,40 L70,55 L55,60 L45,55 L35,60 L25,55Z"/>',monaco:'<path d="M30,60 L25,45 L30,30 L40,25 L55,20 L65,25 L70,35 L65,45 L55,42 L50,50 L55,60 L45,65Z"/>',catalunya:'<path d="M20,50 L25,35 L35,25 L50,20 L65,22 L75,30 L78,45 L70,55 L60,50 L50,55 L40,60 L30,58Z"/>',montreal:'<path d="M15,50 L20,35 L30,25 L45,28 L55,20 L65,25 L75,22 L82,35 L78,50 L70,55 L55,50 L40,58 L25,55Z"/>',red_bull_ring:'<path d="M35,60 L25,40 L35,20 L55,15 L70,25 L75,45 L65,60 L50,55Z"/>',silverstone:'<path d="M25,50 L20,35 L30,20 L45,18 L60,15 L72,22 L78,35 L75,50 L65,58 L50,62 L35,58Z"/>',spa:'<path d="M20,55 L25,40 L20,25 L30,15 L45,12 L55,18 L65,15 L75,22 L78,35 L72,48 L65,55 L50,60 L35,62Z"/>',zandvoort:'<path d="M30,60 L25,45 L30,30 L40,20 L55,18 L65,25 L70,40 L65,55 L50,60 L40,58Z"/>',monza:'<path d="M30,60 L25,40 L30,20 L50,12 L70,20 L75,40 L70,60 L50,65Z"/>',baku:'<path d="M25,70 L28,50 L25,35 L30,20 L40,12 L50,15 L55,25 L60,20 L68,25 L65,40 L70,55 L65,65 L50,70 L35,68Z"/>',marina_bay:'<path d="M25,55 L30,35 L40,25 L55,22 L68,28 L72,40 L68,55 L55,62 L40,60Z"/>',americas:'<path d="M25,50 L30,30 L40,20 L55,18 L65,25 L75,22 L80,35 L72,50 L78,60 L65,65 L50,58 L35,62Z"/>',rodriguez:'<path d="M20,50 L25,30 L40,20 L60,18 L75,25 L78,40 L70,55 L55,60 L40,58 L28,55Z"/>',interlagos:'<path d="M30,55 L25,40 L30,25 L45,18 L60,22 L70,18 L75,30 L70,45 L75,55 L60,62 L45,58Z"/>',vegas:'<path d="M30,65 L25,45 L30,25 L45,15 L60,18 L70,15 L75,30 L70,50 L75,65 L55,70 L40,68Z"/>',losail:'<path d="M30,55 L25,40 L30,25 L45,15 L60,15 L72,25 L75,40 L70,55 L55,62 L40,58Z"/>',yas_marina:'<path d="M25,55 L28,40 L25,25 L35,15 L50,12 L65,18 L72,30 L75,45 L68,58 L55,62 L40,60Z"/>',madrid:'<path d="M25,50 L30,30 L45,20 L60,22 L72,18 L80,28 L75,45 L65,55 L50,58 L35,55Z"/>',default:'<circle cx="45" cy="40" r="25"/>'};
+function getCircuitKey(cid){const m={albert_park:'albert_park',shanghai:'shanghai',suzuka:'suzuka',bahrain:'bahrain',jeddah:'jeddah',miami:'miami',imola:'imola',monaco:'monaco',catalunya:'catalunya',villeneuve:'montreal',red_bull_ring:'red_bull_ring',silverstone:'silverstone',spa:'spa',zandvoort:'zandvoort',monza:'monza',baku:'baku',marina_bay:'marina_bay',americas:'americas',rodriguez:'rodriguez',interlagos:'interlagos',vegas:'vegas',losail:'losail',yas_marina:'yas_marina',madrid:'madrid'};return m[cid]||'default'}
+function getCircuitSVG(cid,color='#e10600'){const k=getCircuitKey(cid);const p=CIRCUIT_SVGS[k]||CIRCUIT_SVGS.default;return `<svg viewBox="0 0 100 80" width="100%" height="100%" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><defs><filter id="glow"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#glow)">${p}</g></svg>`}
 
 // ── State ──
 let state={schedule:[],driverStandings:[],constructorStandings:[],raceResults:{},latestResult:null,driverImages:{},favourites:JSON.parse(localStorage.getItem('racinghub_favourites')||'["sainz"]'),lastUpdated:null};
@@ -1070,336 +1000,228 @@ function renderAll(){renderDriverStandings();renderHomeFavourites();renderTop5Ba
 async function fetchAPI(ep){const url=`${API_BASE}${ep}`;const ord=[CORS_PROXIES[workingProxyIndex],...CORS_PROXIES.filter((_,i)=>i!==workingProxyIndex)];for(const fn of ord){try{const r=await fetch(fn(url),{signal:AbortSignal.timeout(10000)});if(!r.ok)throw new Error;const d=await r.json();workingProxyIndex=CORS_PROXIES.indexOf(fn);return d}catch(e){continue}}throw new Error('All API attempts failed.')}
 
 // ── Driver Images (OpenF1) ──
-async function loadDriverImages(){try{const r=await fetch(`${OPENF1_BASE}/drivers?session_key=latest`,{signal:AbortSignal.timeout(10000)});if(!r.ok)return;const drivers=await r.json();const seen={};drivers.forEach(d=>{if(d.headshot_url&&d.last_name&&!seen[d.last_name.toLowerCase()]){seen[d.last_name.toLowerCase()]=true;const hiRes=d.headshot_url.replace('/1col/image.png','/2col/image.png');state.driverImages[d.last_name.toLowerCase()]=hiRes;if(d.name_acronym)state.driverImages[d.name_acronym.toLowerCase()]=hiRes}})}catch(e){}}
+// ── Driver Database — Embedded 2026 season data (no API dependency) ──
+const DRIVER_DB = [
+  {n:1,code:'NOR',first:'Lando',last:'Norris',team:'McLaren',colour:'F47600',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANNOR01_Lando_Norris/lannor01.png.transform/2col/image.png'},
+  {n:3,code:'VER',first:'Max',last:'Verstappen',team:'Red Bull Racing',colour:'4781D7',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png.transform/2col/image.png'},
+  {n:5,code:'BOR',first:'Gabriel',last:'Bortoleto',team:'Audi',colour:'F50537',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GABBOR01_Gabriel_Bortoleto/gabbor01.png.transform/2col/image.png'},
+  {n:6,code:'HAD',first:'Isack',last:'Hadjar',team:'Red Bull Racing',colour:'4781D7',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/I/ISAHAD01_Isack_Hadjar/isahad01.png.transform/2col/image.png'},
+  {n:10,code:'GAS',first:'Pierre',last:'Gasly',team:'Alpine',colour:'00A1E8',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/P/PIEGAS01_Pierre_Gasly/piegas01.png.transform/2col/image.png'},
+  {n:11,code:'PER',first:'Sergio',last:'Perez',team:'Cadillac',colour:'909090',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/S/SERPER01_Sergio_Perez/serper01.png.transform/2col/image.png'},
+  {n:12,code:'ANT',first:'Kimi',last:'Antonelli',team:'Mercedes',colour:'00D7B6',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/K/ANDANT01_Kimi_Antonelli/andant01.png.transform/2col/image.png'},
+  {n:14,code:'ALO',first:'Fernando',last:'Alonso',team:'Aston Martin',colour:'229971',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FERALO01_Fernando_Alonso/feralo01.png.transform/2col/image.png'},
+  {n:16,code:'LEC',first:'Charles',last:'Leclerc',team:'Ferrari',colour:'ED1131',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CHALEC01_Charles_Leclerc/chalec01.png.transform/2col/image.png'},
+  {n:18,code:'STR',first:'Lance',last:'Stroll',team:'Aston Martin',colour:'229971',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANSTR01_Lance_Stroll/lanstr01.png.transform/2col/image.png'},
+  {n:23,code:'ALB',first:'Alexander',last:'Albon',team:'Williams',colour:'1868DB',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ALEALB01_Alexander_Albon/alealb01.png.transform/2col/image.png'},
+  {n:27,code:'HUL',first:'Nico',last:'Hulkenberg',team:'Audi',colour:'F50537',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/N/NICHUL01_Nico_Hulkenberg/nichul01.png.transform/2col/image.png'},
+  {n:30,code:'LAW',first:'Liam',last:'Lawson',team:'Racing Bulls',colour:'6C98FF',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LIALAW01_Liam_Lawson/lialaw01.png.transform/2col/image.png'},
+  {n:31,code:'OCO',first:'Esteban',last:'Ocon',team:'Haas F1 Team',colour:'9C9FA2',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/E/ESTOCO01_Esteban_Ocon/estoco01.png.transform/2col/image.png'},
+  {n:41,code:'LIN',first:'Arvid',last:'Lindblad',team:'Racing Bulls',colour:'6C98FF',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ARVLIN01_Arvid_Lindblad/arvlin01.png.transform/2col/image.png'},
+  {n:43,code:'COL',first:'Franco',last:'Colapinto',team:'Alpine',colour:'00A1E8',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FRACOL01_Franco_Colapinto/fracol01.png.transform/2col/image.png'},
+  {n:44,code:'HAM',first:'Lewis',last:'Hamilton',team:'Ferrari',colour:'ED1131',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LEWHAM01_Lewis_Hamilton/lewham01.png.transform/2col/image.png'},
+  {n:55,code:'SAI',first:'Carlos',last:'Sainz',team:'Williams',colour:'1868DB',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CARSAI01_Carlos_Sainz/carsai01.png.transform/2col/image.png'},
+  {n:63,code:'RUS',first:'George',last:'Russell',team:'Mercedes',colour:'00D7B6',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GEORUS01_George_Russell/georus01.png.transform/2col/image.png'},
+  {n:77,code:'BOT',first:'Valtteri',last:'Bottas',team:'Cadillac',colour:'909090',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/V/VALBOT01_Valtteri_Bottas/valbot01.png.transform/2col/image.png'},
+  {n:81,code:'PIA',first:'Oscar',last:'Piastri',team:'McLaren',colour:'F47600',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OSCPIA01_Oscar_Piastri/oscpia01.png.transform/2col/image.png'},
+  {n:87,code:'BEA',first:'Oliver',last:'Bearman',team:'Haas F1 Team',colour:'9C9FA2',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OLIBEA01_Oliver_Bearman/olibea01.png.transform/2col/image.png'},
+];
+
+// Build lookup maps from embedded data
+const DRIVER_BY_NUMBER={}, DRIVER_BY_NAME={}, DRIVER_BY_CODE={};
+DRIVER_DB.forEach(d=>{
+  DRIVER_BY_NUMBER[d.n]=d;
+  DRIVER_BY_NAME[d.last.toLowerCase()]=d;
+  DRIVER_BY_CODE[d.code.toLowerCase()]=d;
+  // Register team colours
+  const tid=d.team.toLowerCase().replace(/\s+/g,'_');
+  TEAM_COLORS[tid]='#'+d.colour;
+});
+
+function loadDriverImages(){
+  // Instant — no API call needed, all from embedded DRIVER_DB
+  DRIVER_DB.forEach(d=>{
+    if(d.img){
+      state.driverImages[d.last.toLowerCase()]=d.img;
+      state.driverImages[d.code.toLowerCase()]=d.img;
+    }
+  });
+}
 function getDriverImg(fn,code){if(!fn)return null;return state.driverImages[fn.toLowerCase()]||(code&&state.driverImages[code.toLowerCase()])||null}
 function imgOrPH(fn,code,sz,cls){const u=getDriverImg(fn,code);if(u)return `<img src="${u}" alt="${fn}" class="${cls}" style="width:${sz}px;height:${sz}px" onerror="this.outerHTML='<div class=\\'${cls}-placeholder\\' style=\\'width:${sz}px;height:${sz}px\\'>${(fn||'?')[0]}</div>'">`;return `<div class="${cls}-placeholder" style="width:${sz}px;height:${sz}px">${(fn||'?')[0]}</div>`}
 function getOrd(n){const v=parseInt(n)%100,s=['th','st','nd','rd'];return s[(v-20)%10]||s[v]||s[0]}
 
-// ── Data Loaders — OpenF1 primary, Jolpica fallback ──
-let dataSource=''; // 'openf1' or 'jolpica'
+// ── Data Loaders ──
+// ── Data Loaders — OpenF1 primary, Jolpica fallback, embedded driver DB for images ──
 
-// OpenF1 helpers
 async function openf1Fetch(ep){
-  const url=`${OPENF1_BASE}${ep}`;
-  try{
-    const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
-    if(!r.ok)throw new Error(`OpenF1 HTTP ${r.status} for ${ep}`);
-    return r.json();
-  }catch(e){
-    console.warn(`OpenF1 fetch failed: ${ep}`,e.message);
-    throw e;
-  }
+  const r=await fetch(`${OPENF1_BASE}${ep}`,{signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error(`OpenF1 ${r.status}`);
+  return r.json();
 }
 
-// Get latest race session key from OpenF1
-let _openf1RaceSessions=null;
-async function getLatestRaceSessionKey(){
-  const sessions=await openf1Fetch('/sessions?session_name=Race&year='+CURRENT_YEAR);
-  if(!sessions?.length)return null;
-  // Sort by date and cache for later use by loadRaceResults
-  sessions.sort((a,b)=>new Date(a.date_start)-new Date(b.date_start));
-  _openf1RaceSessions=sessions;
-  // Find most recent past race
-  const now=new Date();
-  const pastSessions=[...sessions].reverse();
-  return pastSessions.find(s=>new Date(s.date_end||s.date_start)<now)||sessions[sessions.length-1];
-}
-
-// Convert OpenF1 championship_drivers + drivers to Jolpica-compatible format
-function openf1ToJolpicaDriverStandings(championship, drivers){
-  // Build driver lookup by number
-  const drvMap={};
-  drivers.forEach(d=>{
-    drvMap[d.driver_number]={
-      driverId:(d.last_name||'').toLowerCase().replace(/\s+/g,'_'),
-      givenName:d.first_name||'',
-      familyName:d.last_name||'',
-      code:d.name_acronym||'',
-      nationality:'',
-      permanentNumber:String(d.driver_number),
-      dateOfBirth:'',
-      url:`https://en.wikipedia.org/wiki/${(d.first_name||'')}_${(d.last_name||'')}`
-    };
-    // Store headshot and team info
-    if(d.headshot_url){
-      const hiRes=d.headshot_url.replace('/1col/image.png','/2col/image.png');
-      state.driverImages[(d.last_name||'').toLowerCase()]=hiRes;
-      if(d.name_acronym)state.driverImages[d.name_acronym.toLowerCase()]=hiRes;
-    }
-    drvMap[d.driver_number]._teamName=d.team_name||'';
-    drvMap[d.driver_number]._teamColour=d.team_colour||'';
-    // Register OpenF1 team colours dynamically into TEAM_COLORS
-    if(d.team_colour&&d.team_name){
-      const tid=d.team_name.toLowerCase().replace(/\s+/g,'_');
-      TEAM_COLORS[tid]='#'+d.team_colour;
-    }
-  });
-  // Sort championship by position_current
-  championship.sort((a,b)=>(a.position_current||99)-(b.position_current||99));
-  return championship.map(c=>{
-    const drv=drvMap[c.driver_number]||{driverId:'unknown_'+c.driver_number,givenName:'#'+c.driver_number,familyName:'',code:'',nationality:'',permanentNumber:String(c.driver_number),dateOfBirth:'',url:''};
-    const teamName=drv._teamName||'';
-    const teamId=teamName.toLowerCase().replace(/\s+/g,'_');
-    const {_teamName:_tn, _teamColour:_tc, ...driverClean}=drv;
-    return {
-      position:String(c.position_current||''),
-      points:String(c.points_current||0),
-      wins:'0', // OpenF1 doesn't provide wins directly
-      Driver:driverClean,
-      Constructors:[{constructorId:teamId,name:teamName,nationality:''}]
-    };
-  });
-}
-
-// Convert OpenF1 championship_teams to Jolpica-compatible format
-function openf1ToJolpicaConstructorStandings(championship){
-  championship.sort((a,b)=>(a.position_current||99)-(b.position_current||99));
-  return championship.map(c=>{
-    const teamId=(c.team_name||'').toLowerCase().replace(/\s+/g,'_');
-    return {
-      position:String(c.position_current||''),
-      points:String(c.points_current||0),
-      wins:'0',
-      Constructor:{constructorId:teamId,name:c.team_name||'',nationality:''}
-    };
-  });
-}
-
-// Try OpenF1 first, then Jolpica
-async function loadDriverStandingsOpenF1(){
-  try{
-    console.log('OpenF1: Finding latest race session...');
-    const sess=await getLatestRaceSessionKey();
-    if(!sess)throw new Error('No race sessions found');
-    const sk=sess.session_key;
-    console.log('OpenF1: Using session_key='+sk+' ('+sess.circuit_short_name+')');
-    const [championship, drivers]=await Promise.all([
-      openf1Fetch(`/championship_drivers?session_key=${sk}`),
-      openf1Fetch(`/drivers?session_key=${sk}`)
-    ]);
-    console.log('OpenF1: Got '+championship?.length+' championship entries, '+drivers?.length+' drivers');
-    if(!championship?.length)throw new Error('No championship data');
-    state.driverStandings=openf1ToJolpicaDriverStandings(championship,drivers);
-    state.lastUpdated=new Date();
-    state._latestSessionKey=sk;
-    state._latestMeetingKey=sess.meeting_key;
-    state._latestSession=sess;
-    dataSource='openf1';
-    console.log('OpenF1: Driver standings loaded successfully ('+state.driverStandings.length+' drivers)');
-    return true;
-  }catch(e){console.warn('OpenF1 driver standings failed:',e.message);return false}
-}
-
-async function loadConstructorStandingsOpenF1(){
-  try{
-    const sk=state._latestSessionKey;
-    if(!sk)throw new Error('No session key');
-    const championship=await openf1Fetch(`/championship_teams?session_key=${sk}`);
-    if(!championship?.length)throw new Error('No team championship data');
-    state.constructorStandings=openf1ToJolpicaConstructorStandings(championship);
-    return true;
-  }catch(e){
-    // Fallback: derive constructor standings from driver standings
-    if(state.driverStandings?.length){
-      const teamMap={};
-      state.driverStandings.forEach(s=>{
-        const c=s.Constructors?.[0];if(!c)return;
-        if(!teamMap[c.constructorId])teamMap[c.constructorId]={name:c.name,points:0};
-        teamMap[c.constructorId].points+=parseFloat(s.points)||0;
-      });
-      const teams=Object.entries(teamMap).map(([id,t])=>({Constructor:{constructorId:id,name:t.name,nationality:''},position:'0',points:String(t.points),wins:'0'}));
-      teams.sort((a,b)=>parseFloat(b.points)-parseFloat(a.points));
-      teams.forEach((t,i)=>t.position=String(i+1));
-      if(teams.length){state.constructorStandings=teams;return true}
-    }
-    return false;
-  }
-}
-
-async function loadLatestResultOpenF1(){
-  try{
-    const sk=state._latestSessionKey;
-    if(!sk)throw new Error('No session key');
-    const [results, drivers]=await Promise.all([
-      openf1Fetch(`/session_result?session_key=${sk}`),
-      openf1Fetch(`/drivers?session_key=${sk}`)
-    ]);
-    if(!results?.length)throw new Error('No results');
-    const sessInfo=state._latestSession||{};
-    const drvMap={};drivers.forEach(d=>{drvMap[d.driver_number]=d});
-    // Sort by position, push null positions (DNF/DNS) to end
-    results.sort((a,b)=>(a.position||999)-(b.position||999));
-    state.latestResult={
-      raceName:sessInfo.session_name?sessInfo.country_name+' Grand Prix':'Latest Race',
-      round:'1',
-      Circuit:{circuitName:sessInfo.circuit_short_name||'',circuitId:'',Location:{country:sessInfo.country_name||''}},
-      date:sessInfo.date_start?sessInfo.date_start.split('T')[0]:'',
-      Results:results.map(r=>{
-        const d=drvMap[r.driver_number]||{};
-        const pos=r.position;
-        // Format gap/time display
-        let timeStr='';
-        if(r.gap_to_leader===0||r.gap_to_leader==='0')timeStr='Winner';
-        else if(typeof r.gap_to_leader==='string')timeStr=r.gap_to_leader;
-        else if(r.gap_to_leader>0)timeStr='+'+r.gap_to_leader.toFixed(3)+'s';
-        else if(r.dnf)timeStr='DNF';
-        else if(r.dns)timeStr='DNS';
-        return {
-          position:pos!=null?String(pos):(r.dnf?'DNF':r.dns?'DNS':'-'),
-          Driver:{driverId:(d.last_name||'').toLowerCase().replace(/\s+/g,'_'),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},
-          Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},
-          status:r.dnf?'DNF':r.dns?'DNS':'Finished',
-          points:String(r.points!=null?r.points:'0'),
-          Time:{time:timeStr},
-          grid:''
-        };
-      })
-    };
-    return true;
-  }catch(e){console.warn('OpenF1 latest result error:',e.message);return false}
-}
-
-// Cache OpenF1 race sessions for the season
-async function getOpenF1RaceSessions(){
-  if(_openf1RaceSessions)return _openf1RaceSessions;
-  try{
-    const sessions=await openf1Fetch(`/sessions?session_name=Race&year=${CURRENT_YEAR}`);
-    if(sessions?.length){
-      sessions.sort((a,b)=>new Date(a.date_start)-new Date(b.date_start));
-      _openf1RaceSessions=sessions;
-      return sessions;
-    }
-  }catch(e){}
-  return [];
-}
-
-// Schedule — always try Jolpica first (it has better calendar data), fall back to OpenF1 meetings
 async function loadSchedule(){
+  // Try Jolpica first (better calendar data with circuitIds)
+  try{const d=await fetchAPI(`/${CURRENT_YEAR}.json`);state.schedule=d.MRData.RaceTable.Races||[];if(state.schedule.length)return}catch(e){}
+  // Fallback: OpenF1 meetings
   try{
-    const d=await fetchAPI(`/${CURRENT_YEAR}.json`);
-    state.schedule=d.MRData.RaceTable.Races||[];
-    if(!state.schedule.length)throw new Error('Empty');
-  }catch(e){
-    // Fallback: build schedule from OpenF1 meetings
-    try{
-      const meetings=await openf1Fetch(`/meetings?year=${CURRENT_YEAR}`);
-      if(meetings?.length){
-        meetings.sort((a,b)=>new Date(a.date_start)-new Date(b.date_start));
-        state.schedule=meetings.map((m,i)=>({
-          round:String(i+1),
-          raceName:m.meeting_name,
-          date:m.date_start?m.date_start.split('T')[0]:'',
-          time:m.date_start?m.date_start.split('T')[1]:'14:00:00Z',
-          Circuit:{circuitId:m.circuit_short_name?.toLowerCase().replace(/\s+/g,'_')||'',circuitName:m.circuit_short_name||m.location||'',Location:{country:m.country_name||'',locality:m.location||''}}
-        }));
-      }
-    }catch(e2){}
-  }
+    const meetings=await openf1Fetch(`/meetings?year=${CURRENT_YEAR}`);
+    if(meetings?.length){
+      meetings.sort((a,b)=>new Date(a.date_start)-new Date(b.date_start));
+      state.schedule=meetings.map((m,i)=>({round:String(i+1),raceName:m.meeting_name,date:m.date_start?m.date_start.split('T')[0]:'',time:m.date_start?m.date_start.split('T')[1]:'14:00:00Z',
+        Circuit:{circuitId:(m.circuit_short_name||'').toLowerCase().replace(/[\s-]+/g,'_'),circuitName:m.circuit_short_name||m.location||'',Location:{country:m.country_name||'',locality:m.location||''}}}));
+    }
+  }catch(e2){}
   renderNextRaceHero();renderSchedule();renderUpcomingStrip();populateResultsSelect();renderSeasonStats();
 }
 
-// Main loaders with OpenF1-first strategy
+// OpenF1 → Jolpica-compatible format converter (uses embedded DRIVER_DB for enrichment)
+function openf1ChampionshipToStandings(championship){
+  championship.sort((a,b)=>(a.position_current||99)-(b.position_current||99));
+  return championship.map(c=>{
+    const db=DRIVER_BY_NUMBER[c.driver_number]||{};
+    return {
+      position:String(c.position_current||''),
+      points:String(c.points_current!=null?c.points_current:0),
+      wins:'0',
+      Driver:{
+        driverId:(db.last||'driver_'+c.driver_number).toLowerCase().replace(/\s+/g,'_'),
+        givenName:db.first||'#'+c.driver_number,familyName:db.last||'',
+        code:db.code||'',nationality:'',
+        permanentNumber:String(c.driver_number),dateOfBirth:'',
+        url:`https://en.wikipedia.org/wiki/${db.first||''}_${db.last||''}`
+      },
+      Constructors:[{constructorId:(db.team||'').toLowerCase().replace(/\s+/g,'_'),name:db.team||'',nationality:''}]
+    };
+  });
+}
+
 async function loadDriverStandings(){
-  const ok=await loadDriverStandingsOpenF1();
-  if(!ok){
-    // Fallback to Jolpica
+  // Try OpenF1 championship_drivers first
+  try{
+    const sessions=await openf1Fetch('/sessions?session_name=Race&year='+CURRENT_YEAR);
+    if(sessions?.length){
+      sessions.sort((a,b)=>new Date(a.date_start)-new Date(b.date_start));
+      state._openf1Sessions=sessions;
+      const now=new Date();
+      const latest=[...sessions].reverse().find(s=>new Date(s.date_end||s.date_start)<now)||sessions[sessions.length-1];
+      state._latestSession=latest;
+      const championship=await openf1Fetch(`/championship_drivers?session_key=${latest.session_key}`);
+      if(championship?.length){
+        state.driverStandings=openf1ChampionshipToStandings(championship);
+        state.lastUpdated=new Date();
+        state._dataSource='openf1';
+      }
+    }
+  }catch(e){console.warn('OpenF1 standings failed:',e.message)}
+  // Fallback: Jolpica
+  if(!state.driverStandings.length){
     try{
-      let d;
-      try{d=await fetchAPI(`/${CURRENT_YEAR}/driverstandings.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/driverstandings.json`);API_YEAR=CURRENT_YEAR-1}
+      let d;try{d=await fetchAPI(`/${CURRENT_YEAR}/driverstandings.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/driverstandings.json`)}
       const l=d.MRData?.StandingsTable?.StandingsLists;
       state.driverStandings=l?.length?l[0].DriverStandings:[];
-      if(state.driverStandings.length)dataSource='jolpica';
-    }catch(e){document.getElementById('driver-standings').innerHTML=`<div class="error-msg">Failed to load standings.</div>`;return}
+      if(state.driverStandings.length)state._dataSource='jolpica';
+    }catch(e){}
   }
   state.lastUpdated=new Date();
   renderDriverStandings();renderHomeFavourites();renderTop5Battle();renderFavourites();renderSeasonStats();populateCompareSelects();
-  const el=document.getElementById('drivers-updated');
-  if(el)el.textContent=`Updated ${state.lastUpdated.toLocaleTimeString()}`;
-  if(dataSource==='jolpica'&&API_YEAR!==CURRENT_YEAR)showApiBanner();
+  const el=document.getElementById('drivers-updated');if(el)el.textContent=`Updated ${state.lastUpdated.toLocaleTimeString()}`;
 }
 
 async function loadConstructorStandings(){
-  const ok=await loadConstructorStandingsOpenF1();
-  if(!ok){
-    try{
-      let d;
-      try{d=await fetchAPI(`/${CURRENT_YEAR}/constructorstandings.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/constructorstandings.json`)}
-      const l=d.MRData?.StandingsTable?.StandingsLists;
-      state.constructorStandings=l?.length?l[0].ConstructorStandings:[];
-    }catch(e){document.getElementById('constructor-standings').innerHTML=`<div class="error-msg">Failed to load standings.</div>`;return}
+  // Try OpenF1
+  try{
+    if(state._latestSession){
+      const champ=await openf1Fetch(`/championship_teams?session_key=${state._latestSession.session_key}`);
+      if(champ?.length){
+        champ.sort((a,b)=>(a.position_current||99)-(b.position_current||99));
+        state.constructorStandings=champ.map(c=>({
+          position:String(c.position_current||''),points:String(c.points_current!=null?c.points_current:0),wins:'0',
+          Constructor:{constructorId:(c.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:c.team_name||'',nationality:''}
+        }));
+      }
+    }
+  }catch(e){}
+  // Fallback: derive from driver standings
+  if(!state.constructorStandings.length&&state.driverStandings.length){
+    const tm={};
+    state.driverStandings.forEach(s=>{const c=s.Constructors?.[0];if(!c)return;if(!tm[c.constructorId])tm[c.constructorId]={name:c.name,pts:0};tm[c.constructorId].pts+=parseFloat(s.points)||0});
+    const teams=Object.entries(tm).map(([id,t])=>({Constructor:{constructorId:id,name:t.name,nationality:''},position:'0',points:String(t.pts),wins:'0'}));
+    teams.sort((a,b)=>parseFloat(b.points)-parseFloat(a.points));teams.forEach((t,i)=>t.position=String(i+1));
+    state.constructorStandings=teams;
+  }
+  // Fallback: Jolpica
+  if(!state.constructorStandings.length){
+    try{let d;try{d=await fetchAPI(`/${CURRENT_YEAR}/constructorstandings.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/constructorstandings.json`)}
+      const l=d.MRData?.StandingsTable?.StandingsLists;state.constructorStandings=l?.length?l[0].ConstructorStandings:[];}catch(e){}
   }
   renderConstructorStandings();renderSeasonStats();
-  const el=document.getElementById('constructors-updated');
-  if(el)el.textContent=`Updated ${new Date().toLocaleTimeString()}`;
+  const el=document.getElementById('constructors-updated');if(el)el.textContent=`Updated ${new Date().toLocaleTimeString()}`;
 }
 
 async function loadLatestResult(){
-  const ok=await loadLatestResultOpenF1();
-  if(!ok){
-    try{
-      let d;
-      try{d=await fetchAPI(`/${CURRENT_YEAR}/results/last.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/results/last.json`)}
-      const r=d.MRData?.RaceTable?.Races;
-      if(r?.length){state.latestResult=r[0]}
-      else{document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results yet this season</div>`;return}
-    }catch(e){document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results available</div>`;return}
-  }
-  renderLatestResult();
+  // Try OpenF1 session_result
+  try{
+    if(state._latestSession){
+      const sk=state._latestSession.session_key;
+      const results=await openf1Fetch(`/session_result?session_key=${sk}`);
+      if(results?.length){
+        results.sort((a,b)=>(a.position||999)-(b.position||999));
+        const sess=state._latestSession;
+        state.latestResult={
+          raceName:(sess.country_name||'')+' Grand Prix',round:'1',
+          Circuit:{circuitName:sess.circuit_short_name||'',circuitId:'',Location:{country:sess.country_name||''}},
+          date:sess.date_start?sess.date_start.split('T')[0]:'',
+          Results:results.map(r=>{
+            const db=DRIVER_BY_NUMBER[r.driver_number]||{};
+            let gap='';if(r.gap_to_leader===0)gap='Winner';else if(typeof r.gap_to_leader==='string')gap=r.gap_to_leader;else if(r.gap_to_leader>0)gap='+'+r.gap_to_leader.toFixed(3)+'s';else if(r.dnf)gap='DNF';else if(r.dns)gap='DNS';
+            return{position:r.position!=null?String(r.position):(r.dnf?'DNF':r.dns?'DNS':'-'),
+              Driver:{driverId:(db.last||'').toLowerCase().replace(/\s+/g,'_'),givenName:db.first||'',familyName:db.last||'',code:db.code||''},
+              Constructor:{constructorId:(db.team||'').toLowerCase().replace(/\s+/g,'_'),name:db.team||''},
+              status:r.dnf?'DNF':r.dns?'DNS':'Finished',points:String(r.points!=null?r.points:0),Time:{time:gap},grid:''};
+          })
+        };
+        renderLatestResult();return;
+      }
+    }
+  }catch(e){console.warn('OpenF1 results failed:',e.message)}
+  // Fallback: Jolpica
+  try{let d;try{d=await fetchAPI(`/${CURRENT_YEAR}/results/last.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/results/last.json`)}
+    const r=d.MRData?.RaceTable?.Races;if(r?.length){state.latestResult=r[0];renderLatestResult()}
+    else document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results yet this season</div>`;
+  }catch(e){document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results available</div>`}
 }
 
 async function loadRaceResults(){
   const round=document.getElementById('results-race-select').value;if(!round)return;
-  const c=document.getElementById('race-results');
-  c.innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
-  // Try OpenF1 first — map round number to session_key via cached sessions list
+  const c=document.getElementById('race-results');c.innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  // Try OpenF1
   try{
-    const sessions=await getOpenF1RaceSessions();
-    // Match by round index (round 1 = first session in sorted list)
-    const roundIdx=parseInt(round)-1;
-    const sess=sessions[roundIdx];
-    if(sess){
-      const [results,drivers]=await Promise.all([
-        openf1Fetch(`/session_result?session_key=${sess.session_key}`),
-        openf1Fetch(`/drivers?session_key=${sess.session_key}`)
-      ]);
-      if(results?.length){
-        const drvMap={};drivers.forEach(d=>{drvMap[d.driver_number]=d});
-        results.sort((a,b)=>(a.position||999)-(b.position||999));
-        const raceObj={
-          raceName:sess.country_name?sess.country_name+' Grand Prix':'Race',round,
-          Circuit:{circuitName:sess.circuit_short_name||'',circuitId:'',Location:{country:sess.country_name||''}},
-          Results:results.map(r=>{const d=drvMap[r.driver_number]||{};
-            let timeStr='';
-            if(r.gap_to_leader===0||r.gap_to_leader==='0')timeStr='Winner';
-            else if(typeof r.gap_to_leader==='string')timeStr=r.gap_to_leader;
-            else if(r.gap_to_leader>0)timeStr='+'+r.gap_to_leader.toFixed(3)+'s';
-            else if(r.dnf)timeStr='DNF';
-            else if(r.dns)timeStr='DNS';
-            return{position:r.position!=null?String(r.position):(r.dnf?'DNF':r.dns?'DNS':'-'),Driver:{driverId:(d.last_name||'').toLowerCase().replace(/\s+/g,'_'),givenName:d.first_name||'',familyName:d.last_name||'',code:d.name_acronym||''},Constructor:{constructorId:(d.team_name||'').toLowerCase().replace(/\s+/g,'_'),name:d.team_name||''},status:r.dnf?'DNF':r.dns?'DNS':'Finished',points:String(r.points!=null?r.points:'0'),Time:{time:timeStr},grid:''}
-          })
-        };
-        if(raceObj.Results.length){state.raceResults[round]=raceObj;renderRaceResults(raceObj);return}
+    const sessions=state._openf1Sessions||await openf1Fetch(`/sessions?session_name=Race&year=${CURRENT_YEAR}`);
+    if(sessions?.length){
+      const sorted=[...sessions].sort((a,b)=>new Date(a.date_start)-new Date(b.date_start));
+      const sess=sorted[parseInt(round)-1];
+      if(sess){
+        const results=await openf1Fetch(`/session_result?session_key=${sess.session_key}`);
+        if(results?.length){
+          results.sort((a,b)=>(a.position||999)-(b.position||999));
+          const raceObj={raceName:(sess.country_name||'')+' Grand Prix',round,
+            Circuit:{circuitName:sess.circuit_short_name||'',circuitId:'',Location:{country:sess.country_name||''}},
+            Results:results.map(r=>{const db=DRIVER_BY_NUMBER[r.driver_number]||{};
+              let gap='';if(r.gap_to_leader===0)gap='Winner';else if(typeof r.gap_to_leader==='string')gap=r.gap_to_leader;else if(r.gap_to_leader>0)gap='+'+r.gap_to_leader.toFixed(3)+'s';else if(r.dnf)gap='DNF';else if(r.dns)gap='DNS';
+              return{position:r.position!=null?String(r.position):(r.dnf?'DNF':r.dns?'DNS':'-'),
+                Driver:{driverId:(db.last||'').toLowerCase().replace(/\s+/g,'_'),givenName:db.first||'',familyName:db.last||'',code:db.code||''},
+                Constructor:{constructorId:(db.team||'').toLowerCase().replace(/\s+/g,'_'),name:db.team||''},
+                status:r.dnf?'DNF':r.dns?'DNS':'Finished',points:String(r.points!=null?r.points:0),Time:{time:gap},grid:''};
+            })};
+          state.raceResults[round]=raceObj;renderRaceResults(raceObj);return;
+        }
       }
     }
-  }catch(e){console.log('OpenF1 race results error:',e.message)}
+  }catch(e){console.warn('OpenF1 race results failed:',e.message)}
   // Fallback: Jolpica
-  try{
-    const yr=API_YEAR||CURRENT_YEAR;
-    const d=await fetchAPI(`/${yr}/${round}/results.json`);
-    const r=d.MRData?.RaceTable?.Races;
-    if(r?.length){state.raceResults[round]=r[0];renderRaceResults(r[0])}
-    else c.innerHTML=`<div class="error-msg">No results yet.</div>`;
+  try{const d=await fetchAPI(`/${CURRENT_YEAR}/${round}/results.json`);const r=d.MRData?.RaceTable?.Races;
+    if(r?.length){state.raceResults[round]=r[0];renderRaceResults(r[0])}else c.innerHTML=`<div class="error-msg">No results yet.</div>`;
   }catch(e){c.innerHTML=`<div class="error-msg">Failed to load results.</div>`}
-}
-
-function showApiBanner(){
-  const existing=document.getElementById('api-year-banner');if(existing)return;
-  const banner=document.createElement('div');
-  banner.id='api-year-banner';
-  banner.style.cssText='background:rgba(225,6,0,0.08);border:1px solid rgba(225,6,0,0.2);border-radius:10px;padding:0.75rem 1.25rem;margin-bottom:1rem;font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:0.5rem';
-  banner.innerHTML=`<span style="color:var(--red);font-size:1rem">⚠</span> <span>Showing <strong>${API_YEAR}</strong> standings — ${CURRENT_YEAR} data is not yet available. The ${CURRENT_YEAR} calendar is shown below.</span>`;
-  const container=document.getElementById('page-home');
-  if(container){const firstChild=container.querySelector('.next-race-hero');if(firstChild)firstChild.after(banner);else container.prepend(banner)}
 }
 
 // ═══ RENDERERS ═══
@@ -1853,20 +1675,19 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetailModal()})
 async function init(){
   const st=document.getElementById('connection-status');
   try{
-    // Step 1: Load schedule from Jolpica (doesn't use OpenF1)
+    // Step 1: Load driver images instantly from embedded DB (no API call)
+    loadDriverImages();
+    // Step 2: Load schedule (Jolpica → OpenF1 fallback)
     await loadSchedule();
-    // Step 2: Load driver standings from OpenF1 (this also fetches drivers with headshots)
+    renderNextRaceHero();renderSchedule();renderUpcomingStrip();populateResultsSelect();renderSeasonStats();
+    // Step 3: Load standings from OpenF1 (with Jolpica fallback)
     await loadDriverStandings();
-    // Step 3: If OpenF1 failed and we don't have driver images yet, load them separately
-    if(!Object.keys(state.driverImages).length) await loadDriverImages();
-    // Step 4: Load constructor standings and latest result (reuse cached session key)
+    // Step 4: Constructor standings + latest result
     await Promise.all([loadConstructorStandings(),loadLatestResult()]);
-    const srcLabel=dataSource==='openf1'?'OpenF1 (live)':'Jolpica F1';
-    st.innerHTML=`<span style="color:var(--green)">● Connected</span> via ${srcLabel}`;
+    const src=state._dataSource==='openf1'?'OpenF1 (live)':'Jolpica F1';
+    st.innerHTML=`<span style="color:var(--green)">● Connected</span> via ${src}`;
     renderHomeFavourites();renderTop5Battle();renderLatestResult();renderDriverStandings();renderFavourites();renderSeasonStats();
-    // Load accurate circuit outlines in background (non-blocking)
-    loadAllCircuitSVGs();
-  }catch(e){console.error('Init failed:',e);st.innerHTML=`<span style="color:var(--red)">● Connection failed</span>`}
+  }catch(e){console.error('Init:',e);st.innerHTML=`<span style="color:var(--red)">● Connection failed</span>`}
 }
 init();
 
