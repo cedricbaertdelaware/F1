@@ -1274,7 +1274,7 @@ function renderTop5Constructors(){
   c.innerHTML=top5.map(s=>{const cn=s.Constructor,tc=getTeamColor(cn?.constructorId),pct=((parseFloat(s.points)/mx)*100).toFixed(1),pc=parseInt(s.position)<=3?`p${s.position}`:'';
     return `<div class="battle-bar-row" onclick="showConstructorDetail('${cn.constructorId}')"><div class="battle-pos ${pc}">${s.position}</div>
       <div class="team-color-dot" style="background:${tc};width:4px;height:28px;border-radius:2px;flex-shrink:0"></div>
-      <div class="battle-name" style="min-width:100px">${cn.name}</div>
+      <div class="battle-name">${cn.name}</div>
       <div class="battle-bar-track"><div class="battle-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${tc},${tc}aa)"><span class="battle-bar-points">${s.points}</span></div></div></div>`}).join('');
   requestAnimationFrame(()=>{c.querySelectorAll('.battle-bar-fill').forEach(b=>{const w=b.style.width;b.style.width='0%';requestAnimationFrame(()=>{b.style.width=w})})});
 }
