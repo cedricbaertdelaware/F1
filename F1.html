@@ -1001,10 +1001,40 @@ function toggleFavourite(id){state.favourites=isFavourite(id)?state.favourites.f
 function renderAll(){renderDriverStandings();renderHomeFavourites();renderTop5Battle();renderTop5Constructors();renderSeasonStats();if(document.getElementById('page-favourites').classList.contains('active'))renderFavourites()}
 
 // ── API ──
-async function fetchAPI(ep){const url=`${API_BASE}${ep}`;const ord=[CORS_PROXIES[workingProxyIndex],...CORS_PROXIES.filter((_,i)=>i!==workingProxyIndex)];for(const fn of ord){try{const r=await fetch(fn(url),{signal:AbortSignal.timeout(10000)});if(!r.ok)throw new Error;const d=await r.json();workingProxyIndex=CORS_PROXIES.indexOf(fn);return d}catch(e){continue}}throw new Error('All API attempts failed.')}
+async function fetchAPI(ep){const url=`${API_BASE}${ep}`;const ord=[CORS_PROXIES[workingProxyIndex],...CORS_PROXIES.filter((_,i)=>i!==workingProxyIndex)];for(const fn of ord){try{const r=await fetch(fn(url),{signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error;const d=await r.json();workingProxyIndex=CORS_PROXIES.indexOf(fn);return d}catch(e){continue}}throw new Error('All API attempts failed.')}
 
 // ── Driver Images (OpenF1) ──
-async function loadDriverImages(){try{const r=await fetch(`${OPENF1_BASE}/drivers?session_key=latest`,{signal:AbortSignal.timeout(10000)});if(!r.ok)return;const drivers=await r.json();const seen={};drivers.forEach(d=>{if(d.headshot_url&&d.last_name&&!seen[d.last_name.toLowerCase()]){seen[d.last_name.toLowerCase()]=true;const hiRes=d.headshot_url.replace('/1col/image.png','/2col/image.png');state.driverImages[d.last_name.toLowerCase()]=hiRes;if(d.name_acronym)state.driverImages[d.name_acronym.toLowerCase()]=hiRes}})}catch(e){}}
+// ── Driver Database — Embedded 2026 season data (no API dependency) ──
+const DRIVER_DB=[
+{n:1,code:'NOR',first:'Lando',last:'Norris',team:'McLaren',colour:'F47600',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANNOR01_Lando_Norris/lannor01.png.transform/2col/image.png'},
+{n:3,code:'VER',first:'Max',last:'Verstappen',team:'Red Bull Racing',colour:'4781D7',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png.transform/2col/image.png'},
+{n:5,code:'BOR',first:'Gabriel',last:'Bortoleto',team:'Audi',colour:'F50537',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GABBOR01_Gabriel_Bortoleto/gabbor01.png.transform/2col/image.png'},
+{n:6,code:'HAD',first:'Isack',last:'Hadjar',team:'Red Bull Racing',colour:'4781D7',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/I/ISAHAD01_Isack_Hadjar/isahad01.png.transform/2col/image.png'},
+{n:10,code:'GAS',first:'Pierre',last:'Gasly',team:'Alpine',colour:'00A1E8',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/P/PIEGAS01_Pierre_Gasly/piegas01.png.transform/2col/image.png'},
+{n:11,code:'PER',first:'Sergio',last:'Perez',team:'Cadillac',colour:'909090',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/S/SERPER01_Sergio_Perez/serper01.png.transform/2col/image.png'},
+{n:12,code:'ANT',first:'Kimi',last:'Antonelli',team:'Mercedes',colour:'00D7B6',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/K/ANDANT01_Kimi_Antonelli/andant01.png.transform/2col/image.png'},
+{n:14,code:'ALO',first:'Fernando',last:'Alonso',team:'Aston Martin',colour:'229971',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FERALO01_Fernando_Alonso/feralo01.png.transform/2col/image.png'},
+{n:16,code:'LEC',first:'Charles',last:'Leclerc',team:'Ferrari',colour:'ED1131',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CHALEC01_Charles_Leclerc/chalec01.png.transform/2col/image.png'},
+{n:18,code:'STR',first:'Lance',last:'Stroll',team:'Aston Martin',colour:'229971',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANSTR01_Lance_Stroll/lanstr01.png.transform/2col/image.png'},
+{n:23,code:'ALB',first:'Alexander',last:'Albon',team:'Williams',colour:'1868DB',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ALEALB01_Alexander_Albon/alealb01.png.transform/2col/image.png'},
+{n:27,code:'HUL',first:'Nico',last:'Hulkenberg',team:'Audi',colour:'F50537',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/N/NICHUL01_Nico_Hulkenberg/nichul01.png.transform/2col/image.png'},
+{n:30,code:'LAW',first:'Liam',last:'Lawson',team:'Racing Bulls',colour:'6C98FF',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LIALAW01_Liam_Lawson/lialaw01.png.transform/2col/image.png'},
+{n:31,code:'OCO',first:'Esteban',last:'Ocon',team:'Haas F1 Team',colour:'9C9FA2',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/E/ESTOCO01_Esteban_Ocon/estoco01.png.transform/2col/image.png'},
+{n:41,code:'LIN',first:'Arvid',last:'Lindblad',team:'Racing Bulls',colour:'6C98FF',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ARVLIN01_Arvid_Lindblad/arvlin01.png.transform/2col/image.png'},
+{n:43,code:'COL',first:'Franco',last:'Colapinto',team:'Alpine',colour:'00A1E8',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FRACOL01_Franco_Colapinto/fracol01.png.transform/2col/image.png'},
+{n:44,code:'HAM',first:'Lewis',last:'Hamilton',team:'Ferrari',colour:'ED1131',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LEWHAM01_Lewis_Hamilton/lewham01.png.transform/2col/image.png'},
+{n:55,code:'SAI',first:'Carlos',last:'Sainz',team:'Williams',colour:'1868DB',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CARSAI01_Carlos_Sainz/carsai01.png.transform/2col/image.png'},
+{n:63,code:'RUS',first:'George',last:'Russell',team:'Mercedes',colour:'00D7B6',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GEORUS01_George_Russell/georus01.png.transform/2col/image.png'},
+{n:77,code:'BOT',first:'Valtteri',last:'Bottas',team:'Cadillac',colour:'909090',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/V/VALBOT01_Valtteri_Bottas/valbot01.png.transform/2col/image.png'},
+{n:81,code:'PIA',first:'Oscar',last:'Piastri',team:'McLaren',colour:'F47600',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OSCPIA01_Oscar_Piastri/oscpia01.png.transform/2col/image.png'},
+{n:87,code:'BEA',first:'Oliver',last:'Bearman',team:'Haas F1 Team',colour:'9C9FA2',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OLIBEA01_Oliver_Bearman/olibea01.png.transform/2col/image.png'},
+];
+const DRIVER_BY_NUMBER={},DRIVER_BY_NAME={},DRIVER_BY_CODE={};
+DRIVER_DB.forEach(d=>{DRIVER_BY_NUMBER[d.n]=d;DRIVER_BY_NAME[d.last.toLowerCase()]=d;DRIVER_BY_CODE[d.code.toLowerCase()]=d;const tid=d.team.toLowerCase().replace(/\s+/g,'_');TEAM_COLORS[tid]='#'+d.colour;});
+
+function loadDriverImages(){
+  DRIVER_DB.forEach(d=>{if(d.img){state.driverImages[d.last.toLowerCase()]=d.img;state.driverImages[d.code.toLowerCase()]=d.img;}});
+}
 function getDriverImg(fn,code){if(!fn)return null;return state.driverImages[fn.toLowerCase()]||(code&&state.driverImages[code.toLowerCase()])||null}
 function imgOrPH(fn,code,sz,cls){const u=getDriverImg(fn,code);if(u)return `<img src="${u}" alt="${fn}" class="${cls}" style="width:${sz}px;height:${sz}px" onerror="this.outerHTML='<div class=\\'${cls}-placeholder\\' style=\\'width:${sz}px;height:${sz}px\\'>${(fn||'?')[0]}</div>'">`;return `<div class="${cls}-placeholder" style="width:${sz}px;height:${sz}px">${(fn||'?')[0]}</div>`}
 function getOrd(n){const v=parseInt(n)%100,s=['th','st','nd','rd'];return s[(v-20)%10]||s[v]||s[0]}
@@ -1012,7 +1042,7 @@ function getOrd(n){const v=parseInt(n)%100,s=['th','st','nd','rd'];return s[(v-2
 // ── Data Loaders — OpenF1 primary, Jolpica fallback, embedded DRIVER_DB ──
 
 async function openf1Fetch(ep){
-  const r=await fetch(`${OPENF1_BASE}${ep}`,{signal:AbortSignal.timeout(10000)});
+  const r=await fetch(`${OPENF1_BASE}${ep}`,{signal:AbortSignal.timeout(5000)});
   if(!r.ok)throw new Error(`OpenF1 ${r.status}`);
   return r.json();
 }
@@ -1123,31 +1153,6 @@ async function loadConstructorStandings(){
       const l=d.MRData?.StandingsTable?.StandingsLists;state.constructorStandings=l?.length?l[0].ConstructorStandings:[];}catch(e){}}
   renderConstructorStandings();renderTop5Constructors();renderSeasonStats();
   const el=document.getElementById('constructors-updated');if(el)el.textContent=`Updated ${new Date().toLocaleTimeString()}`;
-}
-
-async function loadLatestResult(){
-  // Try OpenF1
-  try{
-    if(state._latestSession){
-      const results=await openf1Fetch(`/session_result?session_key=${state._latestSession.session_key}`);
-      if(results?.length){
-        results.sort((a,b)=>(a.position||999)-(b.position||999));
-        const sess=state._latestSession;
-        state.latestResult={
-          raceName:(sess.country_name||'')+' Grand Prix',round:'1',
-          Circuit:{circuitName:sess.circuit_short_name||'',circuitId:'',Location:{country:sess.country_name||''}},
-          date:sess.date_start?sess.date_start.split('T')[0]:'',
-          Results:results.map(openf1ResultToJolpica)
-        };
-        renderLatestResult();return;
-      }
-    }
-  }catch(e){console.warn('OpenF1 latest result:',e.message)}
-  // Fallback: Jolpica
-  try{let d;try{d=await fetchAPI(`/${CURRENT_YEAR}/results/last.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/results/last.json`)}
-    const r=d.MRData?.RaceTable?.Races;if(r?.length){state.latestResult=r[0];renderLatestResult()}
-    else document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results yet this season</div>`;
-  }catch(e){document.getElementById('home-latest-result').innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results available</div>`}
 }
 
 async function loadRaceResults(){
@@ -1272,20 +1277,6 @@ function renderTop5Constructors(){
       <div class="battle-name" style="min-width:100px">${cn.name}</div>
       <div class="battle-bar-track"><div class="battle-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${tc},${tc}aa)"><span class="battle-bar-points">${s.points}</span></div></div></div>`}).join('');
   requestAnimationFrame(()=>{c.querySelectorAll('.battle-bar-fill').forEach(b=>{const w=b.style.width;b.style.width='0%';requestAnimationFrame(()=>{b.style.width=w})})});
-}
-  const c=document.getElementById('home-latest-result'),race=state.latestResult;
-  if(!race?.Results?.length){c.innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results yet</div>`;return}
-  const top5=race.Results.slice(0,5);
-  c.innerHTML=`<div style="margin-bottom:.6rem"><div style="font-family:var(--font-display);font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted)">Round ${race.round}</div>
-    <div style="font-family:var(--font-display);font-weight:700;font-size:.95rem">${race.raceName}</div>
-    <div style="font-size:.75rem;color:var(--text-secondary)">${race.Circuit.circuitName}</div></div>
-    <div class="table-wrapper"><table class="standings-table"><thead><tr><th>Pos</th><th>Driver</th><th>Pts</th></tr></thead><tbody>
-    ${top5.map(r=>{const d=r.Driver,cn=r.Constructor,pc=parseInt(r.position)<=3?`pos-${r.position}`:'',img=getDriverImg(d.familyName,d.code);
-      return `<tr class="${isFavourite(d.driverId)?'favourite-row':''}" onclick="showDriverDetail('${d.driverId}')"><td class="pos-cell ${pc}">${r.position}</td>
-        <td><div class="driver-name-cell">${img?`<img src="${img}" class="driver-headshot-sm" onerror="this.style.display='none'">`:''}<div class="team-color-dot" style="background:${getTeamColor(cn?.constructorId)}"></div>
-        <div><div class="driver-name"><span class="first">${d.givenName}</span> ${d.familyName}</div><div class="driver-team">${cn?.name||''}</div></div></div></td>
-        <td class="points-cell">${r.points}</td></tr>`}).join('')}</tbody></table></div>
-    <div style="text-align:center;margin-top:.6rem"><button class="refresh-btn" onclick="navigateTo('results')" style="font-size:.6rem;padding:.3rem .75rem">View Full Results →</button></div>`;
 }
 
 // ── Circuit Descriptions ──
