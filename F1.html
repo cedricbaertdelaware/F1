@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Racing Hub — Live Formula 1 Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 24'><path d='M1,16 L2,14 L5,13 L8,11 L13,9 L18,8 L22,8 L26,9.5 L29,12 L30,14 L30,16Z' fill='%23e10600'/><path d='M14,9.5 L17,8.5 L20,8.5 L19,11 L15,11.5Z' fill='%23111'/><path d='M26,9 L28,7.5 L30,7 L31,8 L30,10 L29,11Z' fill='%23cc0500'/><path d='M29,7.5 L31,6.5 L32,7.5 L31,8Z' fill='%23e10600'/><path d='M1,15 L0,14.5 L1,13 L3,14Z' fill='%23cc0500'/><path d='M10,13 L22,12 L24,13.5 L22,14.5 L10,15Z' fill='%23aa0400' opacity='0.4'/><circle cx='7.5' cy='17' r='4' fill='%23222'/><circle cx='7.5' cy='17' r='2.5' fill='%23444'/><circle cx='7.5' cy='17' r='1' fill='%23e10600'/><circle cx='25.5' cy='17' r='4' fill='%23222'/><circle cx='25.5' cy='17' r='2.5' fill='%23444'/><circle cx='25.5' cy='17' r='1' fill='%23e10600'/></svg>">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Racing Hub">
+<meta name="theme-color" content="#0e0e11">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -901,8 +906,8 @@ footer a:hover { color: var(--red); }
         <div id="home-top5-battle"><div class="loading"><div class="spinner"></div></div></div>
       </article>
       <article class="card-static">
-        <div class="card-title"><span class="dot"></span>Latest Result</div>
-        <div id="home-latest-result"><div class="loading"><div class="spinner"></div><div class="loading-text">Loading...</div></div></div>
+        <div class="card-title"><span class="dot"></span>Constructor Battle</div>
+        <div id="home-top5-constructors"><div class="loading"><div class="spinner"></div></div></div>
       </article>
     </div>
   </section>
@@ -993,7 +998,7 @@ let state={schedule:[],driverStandings:[],constructorStandings:[],raceResults:{}
 function saveFavourites(){localStorage.setItem('racinghub_favourites',JSON.stringify(state.favourites))}
 function isFavourite(id){return state.favourites.includes(id)}
 function toggleFavourite(id){state.favourites=isFavourite(id)?state.favourites.filter(x=>x!==id):[...state.favourites,id];saveFavourites();renderAll()}
-function renderAll(){renderDriverStandings();renderHomeFavourites();renderTop5Battle();renderSeasonStats();if(document.getElementById('page-favourites').classList.contains('active'))renderFavourites()}
+function renderAll(){renderDriverStandings();renderHomeFavourites();renderTop5Battle();renderTop5Constructors();renderSeasonStats();if(document.getElementById('page-favourites').classList.contains('active'))renderFavourites()}
 
 // ── API ──
 async function fetchAPI(ep){const url=`${API_BASE}${ep}`;const ord=[CORS_PROXIES[workingProxyIndex],...CORS_PROXIES.filter((_,i)=>i!==workingProxyIndex)];for(const fn of ord){try{const r=await fetch(fn(url),{signal:AbortSignal.timeout(10000)});if(!r.ok)throw new Error;const d=await r.json();workingProxyIndex=CORS_PROXIES.indexOf(fn);return d}catch(e){continue}}throw new Error('All API attempts failed.')}
@@ -1116,7 +1121,7 @@ async function loadConstructorStandings(){
   if(!state.constructorStandings.length){
     try{let d;try{d=await fetchAPI(`/${CURRENT_YEAR}/constructorstandings.json`)}catch(e){d=await fetchAPI(`/${CURRENT_YEAR-1}/constructorstandings.json`)}
       const l=d.MRData?.StandingsTable?.StandingsLists;state.constructorStandings=l?.length?l[0].ConstructorStandings:[];}catch(e){}}
-  renderConstructorStandings();renderSeasonStats();
+  renderConstructorStandings();renderTop5Constructors();renderSeasonStats();
   const el=document.getElementById('constructors-updated');if(el)el.textContent=`Updated ${new Date().toLocaleTimeString()}`;
 }
 
@@ -1257,7 +1262,17 @@ function renderTop5Battle(){
   requestAnimationFrame(()=>{c.querySelectorAll('.battle-bar-fill').forEach(b=>{const w=b.style.width;b.style.width='0%';requestAnimationFrame(()=>{b.style.width=w})})});
 }
 
-function renderLatestResult(){
+function renderTop5Constructors(){
+  const c=document.getElementById('home-top5-constructors'),top5=state.constructorStandings.slice(0,5);
+  if(!top5.length){c.innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:1.5rem">No standings data yet</div>`;return}
+  const mx=Math.max(...top5.map(s=>parseFloat(s.points)||1));
+  c.innerHTML=top5.map(s=>{const cn=s.Constructor,tc=getTeamColor(cn?.constructorId),pct=((parseFloat(s.points)/mx)*100).toFixed(1),pc=parseInt(s.position)<=3?`p${s.position}`:'';
+    return `<div class="battle-bar-row" onclick="showConstructorDetail('${cn.constructorId}')"><div class="battle-pos ${pc}">${s.position}</div>
+      <div class="team-color-dot" style="background:${tc};width:4px;height:28px;border-radius:2px;flex-shrink:0"></div>
+      <div class="battle-name" style="min-width:100px">${cn.name}</div>
+      <div class="battle-bar-track"><div class="battle-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${tc},${tc}aa)"><span class="battle-bar-points">${s.points}</span></div></div></div>`}).join('');
+  requestAnimationFrame(()=>{c.querySelectorAll('.battle-bar-fill').forEach(b=>{const w=b.style.width;b.style.width='0%';requestAnimationFrame(()=>{b.style.width=w})})});
+}
   const c=document.getElementById('home-latest-result'),race=state.latestResult;
   if(!race?.Results?.length){c.innerHTML=`<div style="color:var(--text-muted);text-align:center;padding:2rem">No results yet</div>`;return}
   const top5=race.Results.slice(0,5);
@@ -1626,11 +1641,11 @@ async function init(){
     await loadSchedule();
     // Step 3: Driver standings (sets _latestSession for steps 4+)
     await loadDriverStandings();
-    // Step 4: Constructor standings + latest result (reuse _latestSession)
-    await Promise.all([loadConstructorStandings(),loadLatestResult()]);
+    // Step 4: Constructor standings (reuse _latestSession)
+    await loadConstructorStandings();
     const src=state._dataSource==='openf1'?'OpenF1 (live)':'Jolpica F1';
     st.innerHTML=`<span style="color:var(--green)">● Connected</span> via ${src}`;
-    renderHomeFavourites();renderTop5Battle();renderLatestResult();renderDriverStandings();renderFavourites();renderSeasonStats();
+    renderHomeFavourites();renderTop5Battle();renderTop5Constructors();renderDriverStandings();renderFavourites();renderSeasonStats();
   }catch(e){console.error('Init:',e);st.innerHTML=`<span style="color:var(--red)">● Connection failed</span>`}
 }
 init();
