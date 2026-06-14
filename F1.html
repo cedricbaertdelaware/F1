@@ -1006,28 +1006,28 @@ async function fetchAPI(ep){const url=`${API_BASE}${ep}`;const ord=[CORS_PROXIES
 // ── Driver Images (OpenF1) ──
 // ── Driver Database — Embedded 2026 season data (no API dependency) ──
 const DRIVER_DB=[
-{n:1,code:'NOR',first:'Lando',last:'Norris',team:'McLaren',colour:'F47600',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANNOR01_Lando_Norris/lannor01.png.transform/2col/image.png'},
-{n:3,code:'VER',first:'Max',last:'Verstappen',team:'Red Bull Racing',colour:'4781D7',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png.transform/2col/image.png'},
-{n:5,code:'BOR',first:'Gabriel',last:'Bortoleto',team:'Audi',colour:'F50537',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GABBOR01_Gabriel_Bortoleto/gabbor01.png.transform/2col/image.png'},
-{n:6,code:'HAD',first:'Isack',last:'Hadjar',team:'Red Bull Racing',colour:'4781D7',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/I/ISAHAD01_Isack_Hadjar/isahad01.png.transform/2col/image.png'},
-{n:10,code:'GAS',first:'Pierre',last:'Gasly',team:'Alpine',colour:'00A1E8',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/P/PIEGAS01_Pierre_Gasly/piegas01.png.transform/2col/image.png'},
-{n:11,code:'PER',first:'Sergio',last:'Perez',team:'Cadillac',colour:'909090',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/S/SERPER01_Sergio_Perez/serper01.png.transform/2col/image.png'},
-{n:12,code:'ANT',first:'Kimi',last:'Antonelli',team:'Mercedes',colour:'00D7B6',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/K/ANDANT01_Kimi_Antonelli/andant01.png.transform/2col/image.png'},
-{n:14,code:'ALO',first:'Fernando',last:'Alonso',team:'Aston Martin',colour:'229971',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FERALO01_Fernando_Alonso/feralo01.png.transform/2col/image.png'},
-{n:16,code:'LEC',first:'Charles',last:'Leclerc',team:'Ferrari',colour:'ED1131',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CHALEC01_Charles_Leclerc/chalec01.png.transform/2col/image.png'},
-{n:18,code:'STR',first:'Lance',last:'Stroll',team:'Aston Martin',colour:'229971',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANSTR01_Lance_Stroll/lanstr01.png.transform/2col/image.png'},
-{n:23,code:'ALB',first:'Alexander',last:'Albon',team:'Williams',colour:'1868DB',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ALEALB01_Alexander_Albon/alealb01.png.transform/2col/image.png'},
-{n:27,code:'HUL',first:'Nico',last:'Hulkenberg',team:'Audi',colour:'F50537',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/N/NICHUL01_Nico_Hulkenberg/nichul01.png.transform/2col/image.png'},
-{n:30,code:'LAW',first:'Liam',last:'Lawson',team:'Racing Bulls',colour:'6C98FF',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LIALAW01_Liam_Lawson/lialaw01.png.transform/2col/image.png'},
-{n:31,code:'OCO',first:'Esteban',last:'Ocon',team:'Haas F1 Team',colour:'9C9FA2',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/E/ESTOCO01_Esteban_Ocon/estoco01.png.transform/2col/image.png'},
-{n:41,code:'LIN',first:'Arvid',last:'Lindblad',team:'Racing Bulls',colour:'6C98FF',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ARVLIN01_Arvid_Lindblad/arvlin01.png.transform/2col/image.png'},
-{n:43,code:'COL',first:'Franco',last:'Colapinto',team:'Alpine',colour:'00A1E8',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FRACOL01_Franco_Colapinto/fracol01.png.transform/2col/image.png'},
-{n:44,code:'HAM',first:'Lewis',last:'Hamilton',team:'Ferrari',colour:'ED1131',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LEWHAM01_Lewis_Hamilton/lewham01.png.transform/2col/image.png'},
-{n:55,code:'SAI',first:'Carlos',last:'Sainz',team:'Williams',colour:'1868DB',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CARSAI01_Carlos_Sainz/carsai01.png.transform/2col/image.png'},
-{n:63,code:'RUS',first:'George',last:'Russell',team:'Mercedes',colour:'00D7B6',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GEORUS01_George_Russell/georus01.png.transform/2col/image.png'},
-{n:77,code:'BOT',first:'Valtteri',last:'Bottas',team:'Cadillac',colour:'909090',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/V/VALBOT01_Valtteri_Bottas/valbot01.png.transform/2col/image.png'},
-{n:81,code:'PIA',first:'Oscar',last:'Piastri',team:'McLaren',colour:'F47600',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OSCPIA01_Oscar_Piastri/oscpia01.png.transform/2col/image.png'},
-{n:87,code:'BEA',first:'Oliver',last:'Bearman',team:'Haas F1 Team',colour:'9C9FA2',img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OLIBEA01_Oliver_Bearman/olibea01.png.transform/2col/image.png'},
+{n:1,code:'NOR',first:'Lando',last:'Norris',team:'McLaren',colour:'F47600',nat:'British',dob:'1999-11-13',pob:'Bristol, England',wdc:1,wins:11,pods:45,poles:16,flaps:19,carpts:1481,debut:2019,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANNOR01_Lando_Norris/lannor01.png.transform/2col/image.png',bio:'2025 World Champion who rose through McLaren\'s junior programme. Known for raw speed and tyre management.'},
+{n:3,code:'VER',first:'Max',last:'Verstappen',team:'Red Bull Racing',colour:'4781D7',nat:'Dutch',dob:'1997-09-30',pob:'Hasselt, Belgium',wdc:4,wins:63,pods:115,poles:42,flaps:33,carpts:3020,debut:2015,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png.transform/2col/image.png',bio:'Four-time World Champion (2021-2024) and youngest race winner in F1 history. Record 19 wins in 2023.'},
+{n:5,code:'BOR',first:'Gabriel',last:'Bortoleto',team:'Audi',colour:'F50537',nat:'Brazilian',dob:'2004-10-14',pob:'São Paulo, Brazil',wdc:0,wins:0,pods:0,poles:0,flaps:0,carpts:21,debut:2025,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GABBOR01_Gabriel_Bortoleto/gabbor01.png.transform/2col/image.png',bio:'Won both F3 (2023) and F2 (2024) titles in consecutive years. Part of Audi\'s long-term F1 project.'},
+{n:6,code:'HAD',first:'Isack',last:'Hadjar',team:'Red Bull Racing',colour:'4781D7',nat:'French',dob:'2004-09-28',pob:'Paris, France',wdc:0,wins:0,pods:1,poles:0,flaps:0,carpts:65,debut:2025,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/I/ISAHAD01_Isack_Hadjar/isahad01.png.transform/2col/image.png',bio:'Franco-Algerian talent promoted to senior Red Bull team for 2026 alongside Verstappen.'},
+{n:10,code:'GAS',first:'Pierre',last:'Gasly',team:'Alpine',colour:'00A1E8',nat:'French',dob:'1996-02-07',pob:'Rouen, France',wdc:0,wins:1,pods:5,poles:0,flaps:3,carpts:425,debut:2017,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/P/PIEGAS01_Pierre_Gasly/piegas01.png.transform/2col/image.png',bio:'Monza 2020 race winner who rebuilt his career after Red Bull demotion. Now leads Alpine\'s charge.'},
+{n:11,code:'PER',first:'Sergio',last:'Perez',team:'Cadillac',colour:'909090',nat:'Mexican',dob:'1990-01-26',pob:'Guadalajara, Mexico',wdc:0,wins:6,pods:39,poles:3,flaps:12,carpts:1640,debut:2011,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/S/SERPER01_Sergio_Perez/serper01.png.transform/2col/image.png',bio:'Veteran nicknamed "The Minister of Defence". Brings crucial experience to the new Cadillac F1 project.'},
+{n:12,code:'ANT',first:'Kimi',last:'Antonelli',team:'Mercedes',colour:'00D7B6',nat:'Italian',dob:'2006-08-25',pob:'Bologna, Italy',wdc:0,wins:4,pods:8,poles:3,flaps:6,carpts:281,debut:2025,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/K/ANDANT01_Kimi_Antonelli/andant01.png.transform/2col/image.png',bio:'Teenage sensation — F1\'s youngest-ever polesitter. Mercedes\' chosen successor to Hamilton, already a multiple race winner at 19.'},
+{n:14,code:'ALO',first:'Fernando',last:'Alonso',team:'Aston Martin',colour:'229971',nat:'Spanish',dob:'1981-07-29',pob:'Oviedo, Spain',wdc:2,wins:32,pods:106,poles:22,flaps:24,carpts:2312,debut:2001,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FERALO01_Fernando_Alonso/feralo01.png.transform/2col/image.png',bio:'Two-time World Champion (2005-2006). At 44, holds the record for most race entries in F1 history.'},
+{n:16,code:'LEC',first:'Charles',last:'Leclerc',team:'Ferrari',colour:'ED1131',nat:'Monégasque',dob:'1997-10-16',pob:'Monte Carlo, Monaco',wdc:0,wins:8,pods:52,poles:27,flaps:11,carpts:1747,debut:2018,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CHALEC01_Charles_Leclerc/chalec01.png.transform/2col/image.png',bio:'Ferrari\'s star driver. Most poles without a WDC. Won his home Monaco GP in 2024, ending a 93-year wait.'},
+{n:18,code:'STR',first:'Lance',last:'Stroll',team:'Aston Martin',colour:'229971',nat:'Canadian',dob:'1998-10-29',pob:'Montréal, Canada',wdc:0,wins:0,pods:3,poles:1,flaps:0,carpts:292,debut:2017,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANSTR01_Lance_Stroll/lanstr01.png.transform/2col/image.png',bio:'Youngest rookie podium finisher at Baku 2017. Son of Aston Martin team owner Lawrence Stroll.'},
+{n:23,code:'ALB',first:'Alexander',last:'Albon',team:'Williams',colour:'1868DB',nat:'Thai',dob:'1996-03-23',pob:'London, England',wdc:0,wins:0,pods:2,poles:0,flaps:1,carpts:314,debut:2019,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ALEALB01_Alexander_Albon/alealb01.png.transform/2col/image.png',bio:'Thai-British driver who raced for Red Bull before rebuilding his reputation at Williams.'},
+{n:27,code:'HUL',first:'Nico',last:'Hulkenberg',team:'Audi',colour:'F50537',nat:'German',dob:'1987-08-19',pob:'Emmerich, Germany',wdc:0,wins:0,pods:0,poles:1,flaps:2,carpts:570,debut:2010,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/N/NICHUL01_Nico_Hulkenberg/nichul01.png.transform/2col/image.png',bio:'Record holder for most F1 starts without a podium. Le Mans 24h winner. Leads Audi\'s F1 project.'},
+{n:30,code:'LAW',first:'Liam',last:'Lawson',team:'Racing Bulls',colour:'6C98FF',nat:'New Zealander',dob:'2002-02-11',pob:'Hastings, New Zealand',wdc:0,wins:0,pods:0,poles:0,flaps:0,carpts:32,debut:2025,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LIALAW01_Liam_Lawson/lialaw01.png.transform/2col/image.png',bio:'New Zealand\'s latest F1 talent from the Red Bull junior programme.'},
+{n:31,code:'OCO',first:'Esteban',last:'Ocon',team:'Haas F1 Team',colour:'9C9FA2',nat:'French',dob:'1996-09-17',pob:'Évreux, France',wdc:0,wins:1,pods:4,poles:0,flaps:1,carpts:490,debut:2016,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/E/ESTOCO01_Esteban_Ocon/estoco01.png.transform/2col/image.png',bio:'Hungary 2021 race winner. Moved to Haas for 2025 after five seasons with Alpine.'},
+{n:41,code:'LIN',first:'Arvid',last:'Lindblad',team:'Racing Bulls',colour:'6C98FF',nat:'British',dob:'2006-02-17',pob:'London, England',wdc:0,wins:0,pods:0,poles:0,flaps:0,carpts:6,debut:2026,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ARVLIN01_Arvid_Lindblad/arvlin01.png.transform/2col/image.png',bio:'Anglo-Swedish rookie and Red Bull junior. One of the youngest on the 2026 grid at 20 years old.'},
+{n:43,code:'COL',first:'Franco',last:'Colapinto',team:'Alpine',colour:'00A1E8',nat:'Argentine',dob:'2003-05-27',pob:'Buenos Aires, Argentina',wdc:0,wins:0,pods:0,poles:0,flaps:0,carpts:5,debut:2024,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FRACOL01_Franco_Colapinto/fracol01.png.transform/2col/image.png',bio:'Argentina\'s first F1 driver since 2001. Impressed as mid-season Williams replacement in 2024.'},
+{n:44,code:'HAM',first:'Lewis',last:'Hamilton',team:'Ferrari',colour:'ED1131',nat:'British',dob:'1985-01-07',pob:'Stevenage, England',wdc:7,wins:105,pods:205,poles:104,flaps:67,carpts:4900,debut:2007,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LEWHAM01_Lewis_Hamilton/lewham01.png.transform/2col/image.png',bio:'Most successful F1 driver ever — 7 titles, 105 wins, 104 poles, 205 podiums. All records. Joined Ferrari in 2025.'},
+{n:55,code:'SAI',first:'Carlos',last:'Sainz',team:'Williams',colour:'1868DB',nat:'Spanish',dob:'1994-09-01',pob:'Madrid, Spain',wdc:0,wins:4,pods:28,poles:6,flaps:5,carpts:1180,debut:2015,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CARSAI01_Carlos_Sainz/carsai01.png.transform/2col/image.png',bio:'Son of rally legend Carlos Sainz Sr. Podiums for three different teams (McLaren, Ferrari, Williams).'},
+{n:63,code:'RUS',first:'George',last:'Russell',team:'Mercedes',colour:'00D7B6',nat:'British',dob:'1998-02-15',pob:'King\'s Lynn, England',wdc:0,wins:6,pods:26,poles:8,flaps:11,carpts:1113,debut:2019,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GEORUS01_George_Russell/georus01.png.transform/2col/image.png',bio:'Mercedes team leader since Hamilton\'s departure. One of F1\'s most consistent qualifiers.'},
+{n:77,code:'BOT',first:'Valtteri',last:'Bottas',team:'Cadillac',colour:'909090',nat:'Finnish',dob:'1989-08-28',pob:'Nastola, Finland',wdc:0,wins:10,pods:67,poles:20,flaps:19,carpts:1850,debut:2013,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/V/VALBOT01_Valtteri_Bottas/valbot01.png.transform/2col/image.png',bio:'Former Mercedes driver, Hamilton\'s teammate for five seasons. Ten-time race winner now at Cadillac.'},
+{n:81,code:'PIA',first:'Oscar',last:'Piastri',team:'McLaren',colour:'F47600',nat:'Australian',dob:'2001-04-06',pob:'Melbourne, Australia',wdc:0,wins:3,pods:15,poles:2,flaps:3,carpts:500,debut:2023,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OSCPIA01_Oscar_Piastri/oscpia01.png.transform/2col/image.png',bio:'First driver to win F3, F2 and an F1 race all before turning 23. McLaren\'s rising star.'},
+{n:87,code:'BEA',first:'Oliver',last:'Bearman',team:'Haas F1 Team',colour:'9C9FA2',nat:'British',dob:'2005-05-08',pob:'Chelmsford, England',wdc:0,wins:0,pods:0,poles:0,flaps:0,carpts:15,debut:2025,img:'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OLIBEA01_Oliver_Bearman/olibea01.png.transform/2col/image.png',bio:'Ferrari Academy graduate. Finished 7th on debut at 2024 Saudi Arabian GP as a stand-in.'},
 ];
 const DRIVER_BY_NUMBER={},DRIVER_BY_NAME={},DRIVER_BY_CODE={};
 DRIVER_DB.forEach(d=>{DRIVER_BY_NUMBER[d.n]=d;DRIVER_BY_NAME[d.last.toLowerCase()]=d;DRIVER_BY_CODE[d.code.toLowerCase()]=d;const tid=d.team.toLowerCase().replace(/\s+/g,'_');TEAM_COLORS[tid]='#'+d.colour;});
@@ -1519,34 +1519,42 @@ function renderComparison(){
   const d1=s1.Driver,d2=s2.Driver,c1=s1.Constructors?.[0],c2=s2.Constructors?.[0];
   const img1=getDriverImg(d1.familyName,d1.code),img2=getDriverImg(d2.familyName,d2.code);
   const tc1=getTeamColor(c1?.constructorId),tc2=getTeamColor(c2?.constructorId);
+  const db1=DRIVER_BY_NAME[d1.familyName?.toLowerCase()]||DRIVER_BY_CODE[d1.code?.toLowerCase()]||{};
+  const db2=DRIVER_BY_NAME[d2.familyName?.toLowerCase()]||DRIVER_BY_CODE[d2.code?.toLowerCase()]||{};
   const stats=[
-    {label:'Position',v1:parseInt(s1.position),v2:parseInt(s2.position),lower:true},
-    {label:'Points',v1:parseFloat(s1.points),v2:parseFloat(s2.points)},
-    {label:'Wins',v1:parseInt(s1.wins),v2:parseInt(s2.wins)},
+    {label:'2026 Position',v1:parseInt(s1.position),v2:parseInt(s2.position),lower:true},
+    {label:'2026 Points',v1:parseFloat(s1.points),v2:parseFloat(s2.points)},
+    {label:'Championships',v1:db1.wdc||0,v2:db2.wdc||0},
+    {label:'Career Wins',v1:db1.wins||0,v2:db2.wins||0},
+    {label:'Career Podiums',v1:db1.pods||0,v2:db2.pods||0},
+    {label:'Career Poles',v1:db1.poles||0,v2:db2.poles||0},
+    {label:'Career Points',v1:db1.carpts||0,v2:db2.carpts||0},
+    {label:'F1 Debut',v1:db1.debut||0,v2:db2.debut||0,lower:true,noHighlight:true},
   ];
   c.innerHTML=`
     <div class="compare-grid" style="margin-bottom:0.75rem">
       <div class="compare-driver" style="border-top:3px solid ${tc1}">
         ${img1?`<img src="${img1}" alt="${d1.familyName}" onerror="this.style.display='none'">`:''}
         <div class="compare-driver-name">${d1.givenName} ${d1.familyName}</div>
-        <div class="compare-driver-team" style="color:${tc1}">${getFlag(d1.nationality)} ${c1?.name||''}</div>
+        <div class="compare-driver-team" style="color:${tc1}">${getFlag(db1.nat||d1.nationality)} ${c1?.name||''}</div>
       </div>
       <div class="compare-divider"></div>
       <div class="compare-driver" style="border-top:3px solid ${tc2}">
         ${img2?`<img src="${img2}" alt="${d2.familyName}" onerror="this.style.display='none'">`:''}
         <div class="compare-driver-name">${d2.givenName} ${d2.familyName}</div>
-        <div class="compare-driver-team" style="color:${tc2}">${getFlag(d2.nationality)} ${c2?.name||''}</div>
+        <div class="compare-driver-team" style="color:${tc2}">${getFlag(db2.nat||d2.nationality)} ${c2?.name||''}</div>
       </div>
     </div>
     <div class="card-static">
       <div class="card-title"><span class="dot"></span>Head to Head</div>
       ${stats.map(s=>{
-        const w1=s.lower?(s.v1<s.v2):(s.v1>s.v2);
-        const w2=s.lower?(s.v2<s.v1):(s.v2>s.v1);
+        const w1=s.noHighlight?false:s.lower?(s.v1<s.v2):(s.v1>s.v2);
+        const w2=s.noHighlight?false:s.lower?(s.v2<s.v1):(s.v2>s.v1);
+        const fmt=v=>v>=1000?v.toLocaleString():v;
         return `<div class="compare-stat-row">
-          <div class="compare-stat-val left ${w1?'winner':''}">${s.v1}</div>
+          <div class="compare-stat-val left ${w1?'winner':''}">${fmt(s.v1)}</div>
           <div class="compare-stat-label">${s.label}</div>
-          <div class="compare-stat-val right ${w2?'winner':''}">${s.v2}</div>
+          <div class="compare-stat-val right ${w2?'winner':''}">${fmt(s.v2)}</div>
         </div>`}).join('')}
     </div>`;
 }
@@ -1571,24 +1579,50 @@ function showDriverDetail(driverId){
   const img=getDriverImg(d.familyName,d.code);
   const hiResImg=img?img.replace('/1col/image.png','/2col/image.png').replace('/1col-702/','/2col/'):'';
   const wikiUrl=d.url||`https://en.wikipedia.org/wiki/${d.givenName}_${d.familyName}`;
-  const dob=d.dateOfBirth?new Date(d.dateOfBirth).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'N/A';
-  const age=d.dateOfBirth?Math.floor((new Date()-new Date(d.dateOfBirth))/31557600000):'';
+  // Enrich with DRIVER_DB career data
+  const db=DRIVER_BY_NAME[d.familyName?.toLowerCase()]||DRIVER_BY_CODE[d.code?.toLowerCase()]||{};
+  const dob=db.dob?new Date(db.dob).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):(d.dateOfBirth?new Date(d.dateOfBirth).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'N/A');
+  const age=db.dob?Math.floor((new Date()-new Date(db.dob))/31557600000):(d.dateOfBirth?Math.floor((new Date()-new Date(d.dateOfBirth))/31557600000):'');
+  const nat=db.nat||d.nationality||'N/A';
+  const pob=db.pob||'';
+  const wdc=db.wdc||0;
+  const carWins=db.wins||0;
+  const carPods=db.pods||0;
+  const carPoles=db.poles||0;
+  const carFlaps=db.flaps||0;
+  const carPts=db.carpts||0;
+  const debutYr=db.debut||'';
+  const bio=db.bio||'';
+  const flagEmoji=getFlag(nat);
   document.getElementById('detail-modal-content').innerHTML=`
     <div class="dm-header">${hiResImg?`<img src="${hiResImg}" class="dm-header-bg" onerror="this.src='${img||''}';this.onerror=null">`:'<div style="width:100%;height:100%;background:#1a1a1e"></div>'}
       <div class="dm-header-gradient"></div><div class="dm-header-number">${d.permanentNumber||''}</div>
-      <div class="dm-header-info"><div class="dm-name">${d.givenName} ${d.familyName}</div><div class="dm-subtitle" style="color:${tc}">${c?.name||'Unknown'}</div></div></div>
+      <div class="dm-header-info"><div class="dm-name">${flagEmoji} ${d.givenName} ${d.familyName}</div><div class="dm-subtitle" style="color:${tc}">${c?.name||'Unknown'}</div></div></div>
     <div class="dm-body"><div class="dm-team-color-bar" style="background:${tc}"></div>
+      ${bio?`<div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.55;margin-bottom:1.1rem;font-style:italic">"${bio}"</div>`:''}
+      <div class="dm-section-title">2026 Season</div>
       <div class="dm-stats-grid">
-        <div class="dm-stat"><div class="dm-stat-val" style="color:${parseInt(s.position)<=3?'var(--gold)':'var(--text)'}">${s.position}${getOrd(s.position)}</div><div class="dm-stat-lbl">Position</div></div>
+        <div class="dm-stat"><div class="dm-stat-val" style="color:${parseInt(s.position)<=3?'var(--gold)':'var(--text)'}">${s.position}<sup style="font-size:.45em">${getOrd(s.position)}</sup></div><div class="dm-stat-lbl">Position</div></div>
         <div class="dm-stat"><div class="dm-stat-val">${s.points}</div><div class="dm-stat-lbl">Points</div></div>
-        <div class="dm-stat"><div class="dm-stat-val">${s.wins}</div><div class="dm-stat-lbl">Wins</div></div></div>
-      <div class="dm-section-title">Driver Info</div>
-      <div class="dm-info-row"><span class="dm-info-label">Full Name</span><span class="dm-info-value">${d.givenName} ${d.familyName}</span></div>
-      <div class="dm-info-row"><span class="dm-info-label">Nationality</span><span class="dm-info-value">${d.nationality||'N/A'}</span></div>
+        <div class="dm-stat"><div class="dm-stat-val">${s.wins}</div><div class="dm-stat-lbl">Wins</div></div>
+      </div>
+      <div class="dm-section-title" style="margin-top:1rem">Career Statistics</div>
+      <div class="dm-stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(75px,1fr))">
+        <div class="dm-stat"><div class="dm-stat-val" style="color:${wdc>0?'var(--gold)':'var(--text-muted)'}">${wdc}</div><div class="dm-stat-lbl">Titles</div></div>
+        <div class="dm-stat"><div class="dm-stat-val">${carWins}</div><div class="dm-stat-lbl">Wins</div></div>
+        <div class="dm-stat"><div class="dm-stat-val">${carPods}</div><div class="dm-stat-lbl">Podiums</div></div>
+        <div class="dm-stat"><div class="dm-stat-val">${carPoles}</div><div class="dm-stat-lbl">Poles</div></div>
+        <div class="dm-stat"><div class="dm-stat-val">${carFlaps}</div><div class="dm-stat-lbl">Fast Laps</div></div>
+        <div class="dm-stat"><div class="dm-stat-val" style="font-size:0.95rem">${carPts.toLocaleString()}</div><div class="dm-stat-lbl">Career Pts</div></div>
+      </div>
+      <div class="dm-section-title" style="margin-top:1rem">Personal Info</div>
+      <div class="dm-info-row"><span class="dm-info-label">Nationality</span><span class="dm-info-value">${flagEmoji} ${nat}</span></div>
       <div class="dm-info-row"><span class="dm-info-label">Date of Birth</span><span class="dm-info-value">${dob}${age?' ('+age+')':''}</span></div>
+      ${pob?`<div class="dm-info-row"><span class="dm-info-label">Place of Birth</span><span class="dm-info-value">${pob}</span></div>`:''}
       <div class="dm-info-row"><span class="dm-info-label">Number</span><span class="dm-info-value">#${d.permanentNumber||'N/A'}</span></div>
       <div class="dm-info-row"><span class="dm-info-label">Team</span><span class="dm-info-value" style="color:${tc}">${c?.name||'N/A'}</span></div>
-      <div class="dm-info-row"><span class="dm-info-label">Code</span><span class="dm-info-value">${d.code||'N/A'}</span></div>
+      ${debutYr?`<div class="dm-info-row"><span class="dm-info-label">F1 Debut</span><span class="dm-info-value">${debutYr}</span></div>`:''}
+      <div class="dm-info-row"><span class="dm-info-label">Seasons</span><span class="dm-info-value">${debutYr?(2026-debutYr+1)+' ('+debutYr+'–present)':'N/A'}</span></div>
       <a href="${wikiUrl}" target="_blank" class="dm-wiki-link">Read full biography on Wikipedia →</a></div>`;
   openDetailModal();
 }
